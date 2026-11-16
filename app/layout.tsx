@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { BackBar, ScrollButtons } from "@/components/PageTools";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
@@ -17,7 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen font-sans">
         <a href="#main" className="sr-only sr-only-focusable">Skip to content</a>
         <Header />
-        <main id="main">{children}</main>
+        <main id="main"><BackBar />{children}</main>
+        <ScrollButtons />
         <Footer />
       </body>
     </html>

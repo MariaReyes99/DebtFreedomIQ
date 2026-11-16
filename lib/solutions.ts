@@ -133,6 +133,36 @@ export function buildSolutions(i: AssessmentInput, m: Metrics, c: Country, fmt: 
     }
   }
 
+  // 4b. Obligations that work differently from ordinary debt
+  const SL: Partial<Record<string, string>> = {
+    NZ: "Inland Revenue (ird.govt.nz/student-loans). Repayments are based on income, and you can ask about hardship relief",
+    AU: "the ATO (ato.gov.au). HELP-type study loans are repaid through tax once income is over the threshold",
+    GB: "the Student Loans Company (gov.uk/repaying-your-student-loan). Repayments are based on income and stop if it falls below the threshold",
+    US: "your loan servicer and studentaid.gov about income-driven repayment, deferment or forbearance",
+    PH: "the lender (e.g. your school, bank or government programme) about a restructured payment plan",
+  };
+  const student = i.debts.filter(d => d.type === "student_loan" && d.balance > 0);
+  if (student.length) {
+    const pay = student.reduce((t, d) => t + d.minPayment, 0);
+    out.push({ id: "student-loan", kind: "debt", monthly: 0, title: "Student loan: check income-based options before paying extra",
+      detail: `You have ${fmt(student.reduce((t, d) => t + d.balance, 0))} in student loans${pay ? ` (${fmt(pay)}/month)` : ""}. Student loans usually have lower interest and more flexible, income-linked repayments than other debt, so pay them last and don't make extra payments while you're short each month. Contact ${SL[c.code] ?? "your lender"}.` });
+  }
+  const CS: Partial<Record<string, string>> = {
+    NZ: "Inland Revenue (ird.govt.nz/child-support)", AU: "Services Australia Child Support (servicesaustralia.gov.au)",
+    GB: "the Child Maintenance Service (gov.uk/child-maintenance-service)", US: "your state child support agency",
+    PH: "a free legal aid office (e.g. the Public Attorney's Office) if the amount was set by a court",
+  };
+  const csPaid = i.expenses.filter(e => /child support|maintenance/i.test(e.category) && e.amount > 0).reduce((t, e) => t + e.amount, 0);
+  const csArrears = i.debts.filter(d => d.type === "child_support" && d.balance > 0);
+  if (csPaid || csArrears.length)
+    out.push({ id: "child-support", kind: "support", monthly: 0, title: csArrears.length ? "Child support arrears: ask about a payment plan and penalty relief" : "Child support: ask for a reassessment if your income has dropped",
+      detail: `Keep paying child support. It's a priority, like rent and power, and isn't cut by debt solutions. ${csPaid ? `You pay ${fmt(csPaid)}/month. ` : ""}If your income or care arrangements have changed, ask ${CS[c.code] ?? "the child support agency"} for a reassessment.${csArrears.length ? ` For the ${fmt(csArrears.reduce((t, d) => t + d.balance, 0))} owed, ask about an affordable payment plan and whether penalties can be reduced for hardship.` : ""} A free financial mentor can help you prepare.` });
+  const family = i.expenses.filter(e => /parent|family|remit|support/i.test(e.category) && !/child support/i.test(e.category) && e.amount > 0);
+  const famTotal = family.reduce((t, e) => t + e.amount, 0);
+  if (famTotal > 0 && gap > 0)
+    out.push({ id: "family-support", kind: "cost", monthly: round(famTotal * 0.5), title: `Family support (${fmt(famTotal)}/month): agree a smaller amount for now`,
+      detail: `Helping parents or family matters, and it's hard to cut. While you're short ${fmt(gap)} a month, an honest conversation about a smaller, fixed amount (e.g. half, about ${fmt(round(famTotal * 0.5))}) for a few months protects both you and them from bigger problems. Check whether they qualify for their own support (pensions, benefits, community services).` });
+
   // 5. Boarder / flatmate
   if (pairs.length >= 1 && gap > 0)
     out.push({ id: "boarder", kind: "income", monthly: BOARDER[c.code] ?? 0, title: `Take in a boarder or flatmate (about ${fmt(BOARDER[c.code] ?? 0)}/month)`, detail: "A spare room can bring in steady income quickly. Check your insurance and lender conditions first." });

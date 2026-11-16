@@ -1,6 +1,6 @@
 export type DebtType =
   | "mortgage" | "credit_card" | "personal_loan" | "car_loan" | "bnpl" | "student_loan"
-  | "medical" | "tax" | "business" | "family" | "other";
+  | "medical" | "tax" | "child_support" | "business" | "family" | "other";
 export type AssetType = "property" | "vehicle" | "investments" | "retirement" | "business" | "other";
 
 export type IncomeItem = { id: string; source: string; amount: number }; // per month

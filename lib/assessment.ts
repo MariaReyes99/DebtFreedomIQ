@@ -5,7 +5,7 @@ import { COUNTRIES, DEFAULT_COUNTRY, money, toCountryCode, type Country } from "
 import { createClient } from "./supabase/server";
 import type { AssessmentInput, Advice, Metrics, DebtType, AssetType } from "./types";
 
-const DEBT_TYPES: DebtType[] = ["mortgage", "credit_card", "personal_loan", "car_loan", "bnpl", "student_loan", "medical", "tax", "business", "family", "other"];
+const DEBT_TYPES: DebtType[] = ["mortgage", "credit_card", "personal_loan", "car_loan", "bnpl", "student_loan", "medical", "tax", "child_support", "business", "family", "other"];
 const ASSET_TYPES: AssetType[] = ["property", "vehicle", "investments", "retirement", "business", "other"];
 const n = (v: unknown, max = 1e10) => Math.min(max, Math.max(0, Number(v) || 0));
 const str = (v: unknown, len = 80) => String(v ?? "").slice(0, len);

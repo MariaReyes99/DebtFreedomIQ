@@ -13,7 +13,7 @@ export type PlanData = {
   goals: Goal[];
 };
 
-export default function PlanView({ countryCode, plan: initial, editable, hasConsumerDebt }: { countryCode: CountryCode; plan: PlanData; editable: boolean; hasConsumerDebt: boolean }) {
+export default function PlanView({ countryCode, plan: initial, editable, hasConsumerDebt, cash }: { countryCode: CountryCode; plan: PlanData; editable: boolean; hasConsumerDebt: boolean; cash?: { surplus: number; savings: number } }) {
   const c = COUNTRIES[countryCode];
   const f = (v: number) => money(c, v);
   const [plan, setPlan] = useState(initial);
@@ -24,6 +24,11 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
   const [pending, start] = useTransition();
   const s = plan.scenarios.find(x => x.key === sel)!;
   const hasMortgage = plan.scenarios.some(x => x.mortgageFreeMonth !== null);
+  const noExtra = plan.scenarios.every(x => x.monthlyToDebt <= 0);
+  const debtCount = plan.scenarios[0]?.payoffOrder.length ?? 0;
+  const short = cash && cash.surplus < 0 ? -cash.surplus : 0;
+  const runOutMonths = short ? Math.max(0, cash!.savings) / short : null;
+  const runOutDate = runOutMonths !== null ? new Date(Date.now() + runOutMonths * 30.4 * 864e5).toLocaleDateString("en-NZ", { month: "long", year: "numeric" }) : null;
 
   const regenerate = (strategy: Strategy) => start(async () => {
     setMsg("");
@@ -44,6 +49,26 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
 
   return (
     <div className="space-y-6">
+      {/* How to read and use this plan */}
+      <details className="no-print rounded-2xl border border-navy-100 bg-white p-5" open>
+        <summary className="cursor-pointer text-lg font-bold">How this plan works and what to do 🧭</summary>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-navy-700">
+          <li><strong>Where the numbers come from:</strong> your latest Financial Health check (income, living costs, each debt&apos;s balance, interest rate and repayment, and your savings). Update the check and click <em>Rebuild my plan</em> whenever things change.</li>
+          <li><strong>Three scenarios:</strong> each splits your spare money each month differently. <em>Conservative</em> builds savings first, <em>Balanced</em> splits it, <em>Aggressive</em> puts almost all of it on debt. Click a card to see its milestones and savings below.</li>
+          <li><strong>Payoff method:</strong> decides which debt gets the <em>extra</em> money first: the highest interest rate (saves the most) or the smallest balance (quick wins). It only changes the result when there&apos;s spare money and more than one debt.</li>
+          <li><strong>Debt-free timeline:</strong> how much you&apos;d owe over time under each scenario, assuming your repayments keep being made.</li>
+          <li><strong>What to do:</strong> follow the milestones for the scenario you pick, set your goals at the bottom, and ask a what-if question if you&apos;re unsure.</li>
+        </ol>
+      </details>
+
+      {short > 0 && (
+        <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-5 text-red-900" role="alert">
+          <p className="text-lg font-bold">First: close your {f(short)}/month shortfall</p>
+          <p className="mt-1 text-sm">This plan assumes you keep making every repayment, but right now more goes out each month than comes in.{runOutDate && cash!.savings > 0 ? ` At this rate your ${f(cash!.savings)} savings run out around ${runOutDate}.` : ""} Until the gap is closed there&apos;s no spare money for extra repayments, so all three scenarios look almost the same.</p>
+          <div className="mt-3 flex flex-wrap gap-2"><Button href="/health" size="sm">See &ldquo;Ways to close your gap&rdquo;</Button><Button href="/help" size="sm" variant="secondary">Find free help</Button></div>
+        </div>
+      )}
+
       {/* Summary */}
       <Card className="bg-gradient-to-br from-navy-900 to-navy-800 text-white">
         <div className="flex flex-wrap items-center gap-2"><Badge tone="teal">{plan.summary.source === "openai" ? "✨ AI-generated plan" : "Freedom Plan"}</Badge>{plan.createdAt && <span className="text-xs text-navy-300">Saved {new Date(plan.createdAt).toLocaleDateString()}</span>}</div>
@@ -61,6 +86,7 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
             <Button variant="secondary" size="sm" onClick={() => window.print()}>⬇ Download PDF</Button>
           </div>
         )}
+        {editable && noExtra && <p className="no-print mt-3 text-sm text-navy-200">ℹ️ Both payoff methods give the same timeline right now because there&apos;s {f(0)} a month spare for extra repayments. Each debt just gets its normal repayment.{debtCount > 1 ? " Once you have spare money, the method decides which debt it goes to first." : ""}</p>}
         {msg && <p className="mt-3 text-sm text-teal-200" role="status">{msg}</p>}
       </Card>
 

@@ -13,7 +13,7 @@ import { Button, Card, cx } from "./ui";
 type Result = { metrics: Metrics; advice: Advice; help: { category: HelpCategory; why: string }[]; saved: boolean; assessmentId?: string | null };
 const PENDING = "dfiq_pending_assessment";
 const STEPS = ["Income", "Expenses", "Debts", "Assets & savings", "Your situation"] as const;
-const DEBT_TYPES: [DebtType, string][] = [["mortgage", "Mortgage / home loan"], ["credit_card", "Credit card"], ["personal_loan", "Personal loan"], ["car_loan", "Car loan"], ["bnpl", "Buy now pay later"], ["student_loan", "Student loan"], ["medical", "Medical / hospital bill"], ["tax", "Tax debt"], ["business", "Business debt"], ["family", "Family / friends"], ["other", "Other"]];
+const DEBT_TYPES: [DebtType, string][] = [["mortgage", "Mortgage / home loan"], ["credit_card", "Credit card"], ["personal_loan", "Personal loan"], ["car_loan", "Car loan"], ["bnpl", "Buy now pay later"], ["student_loan", "Student loan"], ["medical", "Medical / hospital bill"], ["tax", "Tax debt"], ["child_support", "Child support arrears"], ["business", "Business debt"], ["family", "Family / friends"], ["other", "Other"]];
 const ASSET_TYPES: [AssetType, string][] = [["property", "Property"], ["vehicle", "Vehicle"], ["investments", "Investments / shares"], ["retirement", "Retirement / KiwiSaver / super"], ["business", "Business"], ["other", "Other"]];
 const SITUATION: [keyof AssessmentInput["situation"], string][] = [
   ["behindOnBills", "I'm behind on bills or loan repayments"],
@@ -158,7 +158,12 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                   {del("expenses", i, x.category)}
                 </div>
               ))}
-              <Button variant="ghost" size="sm" onClick={() => setData(d => ({ ...d, expenses: [...d.expenses, { id: uid(), category: "", amount: 0, essential: true }] }))}>+ Add expense</Button>
+              <div className="flex flex-wrap gap-2">
+                {([["Child support (paying)", true], ["Supporting parents / family", false], ["Childcare", true], ["Insurance", true]] as const).filter(([l]) => !data.expenses.some(e => e.category === l)).map(([l, ess]) => (
+                  <Button key={l} variant="secondary" size="sm" onClick={() => setData(d => ({ ...d, expenses: [...d.expenses, { id: uid(), category: l, amount: 0, essential: ess }] }))}>+ {l}</Button>
+                ))}
+                <Button variant="ghost" size="sm" onClick={() => setData(d => ({ ...d, expenses: [...d.expenses, { id: uid(), category: "", amount: 0, essential: true }] }))}>+ Add expense</Button>
+              </div>
             </>)}
 
             {step === 2 && (<>

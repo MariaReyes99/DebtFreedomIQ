@@ -35,7 +35,7 @@ export default function HealthResults({ input, metrics: m, advice, help, country
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900" role="status">
           <p className="font-bold">Some numbers may be missing or in the wrong unit, which can make your scores look worse than they are:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{warnings.map((w, i) => <li key={i}>{w.message}</li>)}</ul>
-          <p className="mt-2 text-sm">Use <strong>Edit my answers</strong> above to fix them.</p>
+          <p className="mt-2 text-sm">Use <strong>Edit my answers</strong> to fix them.</p>
         </div>
       )}
       {crisis && (
