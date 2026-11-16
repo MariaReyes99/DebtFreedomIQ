@@ -24,6 +24,11 @@ export default function HealthResults({ input, metrics: m, advice, help, country
   const expenseData = [...input.expenses.map(e => ({ name: e.category, value: e.amount })), { name: "Debt repayments", value: m.monthlyDebtPayments }];
 
   const warnings = dataWarnings(input, m, f);
+  // Weighted average interest rate and the monthly interest cost on what's owed
+  const owing = input.debts.filter(d => d.balance > 0);
+  const owed = owing.reduce((t, d) => t + d.balance, 0);
+  const avgRate = owed > 0 ? owing.reduce((t, d) => t + d.balance * d.rate, 0) / owed : null;
+  const interestPerMonth = owing.reduce((t, d) => t + d.balance * (d.rate / 100) / 12, 0);
   return (
     <div className="space-y-6" id="results">
       {warnings.length > 0 && (
@@ -62,7 +67,8 @@ export default function HealthResults({ input, metrics: m, advice, help, country
         <StatCard label="Debt-to-income" icon="⚖️" value={pct(m.debtToIncome)} tone={dtiTone} sub="Repayments ÷ income (aim < 36%)" />
         <StatCard label="Monthly surplus" icon="💧" value={f(m.monthlySurplus)} tone={m.monthlySurplus >= 0 ? "good" : "bad"} sub={m.monthlyIncome > 0 ? `${m.monthlySurplus >= 0 ? "Saving" : "Shortfall of"} ${pct(Math.abs(m.savingsRate))} of income` : "No income entered"} />
         <StatCard label="Emergency fund" icon="🛟" value={`${m.emergencyMonths.toFixed(1)} mo`} tone={m.emergencyMonths >= 3 ? "good" : m.emergencyMonths >= 1 ? "warn" : "bad"} sub={`Score ${m.emergencyScore}/100 · aim for 3–6 months`} />
-        <StatCard label="High-interest debt" icon="🔥" value={pct(m.highInterestShare)} tone={m.highInterestShare > 0.3 ? "bad" : m.highInterestShare > 0 ? "warn" : "good"} sub="Share of debt at 15%+" />
+        <StatCard label="Interest you pay" icon="🔥" value={avgRate === null ? "—" : `${avgRate.toFixed(1)}% avg`} tone={m.highInterestShare > 0.3 ? "bad" : m.highInterestShare > 0 ? "warn" : "navy"}
+          sub={avgRate === null ? "No debts entered" : `About ${f(interestPerMonth)}/month in interest. ${m.highInterestShare > 0 ? `${pct(m.highInterestShare)} of your debt is at 15%+` : "No costly debt (15%+)"}`} />
       </div>
 
       <CashRunway income={m.monthlyIncome} living={m.monthlyExpenses} debt={m.monthlyDebtPayments} savings={input.savings} symbol={c.symbol} fmt={f} />
