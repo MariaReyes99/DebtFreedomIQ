@@ -20,7 +20,7 @@ export function sanitize(raw: unknown): AssessmentInput {
     incomes: (r.incomes ?? []).slice(0, 20).map(x => ({ id: str(x.id, 20) || id(), source: str(x.source) || "Income", amount: n(x.amount) })),
     expenses: (r.expenses ?? []).slice(0, 40).map(x => ({ id: str(x.id, 20) || id(), category: str(x.category) || "Expense", amount: n(x.amount), essential: Boolean(x.essential) })),
     debts: (r.debts ?? []).slice(0, 30).map(x => ({ id: str(x.id, 20) || id(), name: str(x.name) || "Debt", type: DEBT_TYPES.includes(x.type as DebtType) ? x.type as DebtType : "other", balance: n(x.balance), rate: n(x.rate, 1000), minPayment: n(x.minPayment) })),
-    assets: (r.assets ?? []).slice(0, 30).map(x => ({ id: str(x.id, 20) || id(), name: str(x.name) || "Asset", type: ASSET_TYPES.includes(x.type as AssetType) ? x.type as AssetType : "other", value: n(x.value) })),
+    assets: (r.assets ?? []).slice(0, 30).map(x => ({ id: str(x.id, 20) || id(), name: str(x.name) || "Asset", type: ASSET_TYPES.includes(x.type as AssetType) ? x.type as AssetType : "other", value: n(x.value), ...(["home", "rental", "other"].includes(String(x.use)) ? { use: x.use as "home" | "rental" | "other" } : {}) })),
     savings: n(r.savings),
     situation: { behindOnBills: !!s.behindOnBills, collectionsOrCourt: !!s.collectionsOrCourt, cantAffordFood: !!s.cantAffordFood, housingAtRisk: !!s.housingAtRisk, medicalDebt: !!s.medicalDebt, distressed: !!s.distressed },
     goals: str(r.goals, 600),
@@ -52,7 +52,7 @@ export async function saveAssessment(userId: string, input: AssessmentInput, met
   const aid = data.id as string;
   await Promise.all([
     input.debts.length && supabase.from("debts").insert(input.debts.map(d => ({ user_id: userId, assessment_id: aid, name: d.name, type: d.type, balance: d.balance, interest_rate: d.rate, min_payment: d.minPayment }))),
-    input.assets.length && supabase.from("assets").insert(input.assets.map(a => ({ user_id: userId, assessment_id: aid, name: a.name, type: a.type, value: a.value }))),
+    input.assets.length && supabase.from("assets").insert(input.assets.map(a => ({ user_id: userId, assessment_id: aid, name: a.name, type: a.type, value: a.value, use: a.use ?? null }))),
     input.expenses.length && supabase.from("expenses").insert(input.expenses.map(e => ({ user_id: userId, assessment_id: aid, category: e.category, amount: e.amount, essential: e.essential }))),
   ]);
   return aid;
@@ -74,7 +74,7 @@ export async function loadLatest(userId: string) {
     incomes: rec.incomes?.length ? rec.incomes : [{ id: "i1", source: "Income", amount: Number(a.monthly_income) }],
     expenses: (expenses ?? []).map(e => ({ id: e.id, category: e.category, amount: Number(e.amount), essential: e.essential })),
     debts: (debts ?? []).map(d => ({ id: d.id, name: d.name, type: d.type, balance: Number(d.balance), rate: Number(d.interest_rate), minPayment: Number(d.min_payment) })),
-    assets: (assets ?? []).map(x => ({ id: x.id, name: x.name, type: x.type, value: Number(x.value) })),
+    assets: (assets ?? []).map(x => ({ id: x.id, name: x.name, type: x.type, value: Number(x.value), ...(x.use ? { use: x.use } : {}) })),
     savings: Number(a.savings), situation: a.situation, goals: a.goals ?? "",
   };
   const advice: Advice = { summary: rec.summary ?? "", recommendations: rec.recommendations ?? [], nextSteps: rec.nextSteps ?? [], source: a.ai_source === "openai" ? "openai" : "rules" };

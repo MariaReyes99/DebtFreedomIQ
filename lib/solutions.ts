@@ -81,27 +81,55 @@ export function buildSolutions(i: AssessmentInput, m: Metrics, c: Country, fmt: 
     }
   }
 
-  // 3. Rental income from a second property
-  if (pairs.length >= 2 && !hasRentIncome) {
-    const rental = [...pairs].filter(p => p.asset).sort((a, b) => (a.asset!.value - b.asset!.value))[0];
-    if (rental?.asset) {
-      const rent = round(rental.asset.value * 0.04 / 12, 50);
-      out.push({ id: "rent-income", kind: "income", monthly: rent, title: `Add rent from ${rental.asset.name} (about ${fmt(rent)}/month)`, detail: `You have ${pairs.length} properties but no rental income entered. A typical rent for a ${fmt(rental.asset.value)} property is roughly ${fmt(rent)}/month (about 4% a year). If it's already rented, add the real amount under Income. If it's empty, renting it out could cover most of its mortgage.` });
+  // How each property is used: what the person told us, else a careful guess from names and income
+  const rentIncomes = i.incomes.filter(x => /rent|board|tenant/i.test(x.source) && x.amount > 0);
+  const key = (a: AssetItem) => a.name.toLowerCase().split(/\s+/).find(w => w.length > 2 && !/^(the|house|home|property|unit|flat)$/.test(w)) ?? "";
+  const mentions = (a: AssetItem) => rentIncomes.filter(x => key(a) && x.source.toLowerCase().includes(key(a)));
+  const useOf = (a: AssetItem) => a.use ?? (mentions(a).length || /rental|invest|tenant/i.test(a.name) ? "rental" : /\bhome\b|live in/i.test(a.name) ? "home" : undefined);
+  const withAsset = pairs.filter(p => p.asset) as { debt: DebtItem; asset: AssetItem }[];
+  const rentals = withAsset.filter(p => useOf(p.asset) === "rental");
+  const rentFrom = (a: AssetItem) => {
+    const named = mentions(a).reduce((t, x) => t + x.amount, 0);
+    if (named) return named;
+    return useOf(a) === "rental" && rentals.length === 1 ? rentIncomes.reduce((t, x) => t + x.amount, 0) : 0;
+  };
+
+  // 3. Rental income from a property that isn't lived in and has no rent entered
+  if (withAsset.length >= 2) {
+    const unrented = withAsset.filter(p => useOf(p.asset) !== "home" && rentFrom(p.asset) === 0);
+    const known = unrented.filter(p => useOf(p.asset) !== undefined);
+    const target = known[0];
+    if (target) {
+      const rent = round(target.asset.value * 0.04 / 12, 50);
+      out.push({ id: "rent-income", kind: "income", monthly: rent, title: `Rent out ${target.asset.name} (about ${fmt(rent)}/month)`, detail: `${useOf(target.asset) === "rental" ? `You marked ${target.asset.name} as rented out but no rent is entered for it. Add the real amount under Income.` : `${target.asset.name} isn't lived in.`} A typical rent for a ${fmt(target.asset.value)} property is roughly ${fmt(rent)}/month (about 4% a year), which could cover much of its ${fmt(target.debt.minPayment)}/month mortgage.` });
+    } else if (!hasRentIncome && withAsset.every(p => useOf(p.asset) === undefined)) {
+      out.push({ id: "fix-use", kind: "fix", monthly: 0, title: "Tell us which property you live in", detail: `You have ${withAsset.length} properties. On the "What you own" step, mark each one as "I live here", "Rented out" or "Empty". Then we can show the right options and never suggest selling your home by mistake.` });
     }
   }
 
-  // 4. Sell a rental (or downsize the only home) to release equity
-  if (gap > 0 && pairs.some(p => p.asset)) {
-    const withEquity = pairs.filter(p => p.asset && p.asset.value > p.debt.balance);
-    // With 2+ properties, the cheaper one is most likely the rental, so suggest that, not the family home
-    const candidate = withEquity.length >= 2 ? [...withEquity].sort((a, b) => a.asset!.value - b.asset!.value)[0] : withEquity[0];
-    if (candidate?.asset) {
-      const equity = round(candidate.asset.value * 0.97 - candidate.debt.balance, 1000); // ~3% selling costs
-      const isOnlyHome = pairs.length === 1;
-      out.push({ id: "sell", kind: "asset", monthly: candidate.debt.minPayment, oneOff: equity,
-        title: isOnlyHome ? `Consider downsizing: frees about ${fmt(candidate.debt.minPayment)}/month` : `Consider selling ${candidate.asset.name} (rental): frees ${fmt(candidate.debt.minPayment)}/month`,
-        detail: `Selling would repay its ${fmt(candidate.debt.balance)} loan, remove its ${fmt(candidate.debt.minPayment)}/month repayment and release about ${fmt(equity)} after costs. That money could reduce your other mortgage, clear debts or build a safety buffer.${isOnlyHome ? " Moving to a cheaper home could do something similar." : ""}`,
-        caution: `A big decision, and an alternative to restructuring or renting out this property. Talk to a financial adviser and an accountant (tax) first. A planned sale is usually far better than a forced mortgagee sale.` });
+  // 4. Sell a property to release equity: the rental first, never guess the family home
+  if (gap > 0 && withAsset.length) {
+    const sale = (p: { debt: DebtItem; asset: AssetItem }) => round(p.asset.value * 0.97 - p.debt.balance, 1000); // ~3% selling costs
+    const isOnly = withAsset.length === 1;
+    const candidates = isOnly ? withAsset : rentals.length ? rentals : withAsset.filter(p => useOf(p.asset) === "other");
+    const pick = [...candidates].filter(p => sale(p) > 0).sort((x, y) => sale(y) - sale(x))[0];
+    if (pick) {
+      const equity = sale(pick);
+      const lostRent = rentFrom(pick.asset);
+      // Use the cash to pay down the remaining mortgage (largest first): its repayment falls in proportion
+      const other = withAsset.filter(p => p !== pick).sort((x, y) => y.debt.balance - x.debt.balance)[0];
+      const paid = other ? Math.min(equity, other.debt.balance) : 0;
+      const otherCut = other && other.debt.balance > 0 ? round(other.debt.minPayment * (paid / other.debt.balance)) : 0;
+      const net = round(pick.debt.minPayment - lostRent + otherCut);
+      const label = isOnly ? "Consider downsizing" : `Consider selling ${pick.asset.name}${useOf(pick.asset) === "rental" ? " (your rental)" : ""}`;
+      out.push({ id: "sell", kind: "asset", monthly: Math.max(0, net), oneOff: equity,
+        title: `${label}: improves cash flow by about ${fmt(Math.max(0, net))}/month`,
+        detail: [
+          `Selling at about ${fmt(pick.asset.value)} (less ~3% costs) repays its ${fmt(pick.debt.balance)} loan and releases about ${fmt(equity)}.`,
+          `Its ${fmt(pick.debt.minPayment)}/month repayment stops${lostRent ? `, but you lose ${fmt(lostRent)}/month rent` : ""}.`,
+          other ? `Putting ${fmt(paid)} toward ${other.asset.name} (${fmt(other.debt.balance)} owing) could cut its ${fmt(other.debt.minPayment)}/month repayment by about ${fmt(otherCut)} if the bank recalculates your payments, leaving about ${fmt(other.debt.balance - paid)} owing in total.` : "Moving to a cheaper home could do something similar.",
+        ].join(" "),
+        caution: `A big decision and an alternative to restructuring. Check tax (e.g. bright-line rules in NZ) with an accountant and talk to a financial adviser first. A planned sale is usually far better than a forced mortgagee sale.` });
     }
   }
 

@@ -6,7 +6,8 @@ export type AssetType = "property" | "vehicle" | "investments" | "retirement" | 
 export type IncomeItem = { id: string; source: string; amount: number }; // per month
 export type ExpenseItem = { id: string; category: string; amount: number; essential: boolean }; // per month
 export type DebtItem = { id: string; name: string; type: DebtType; balance: number; rate: number; minPayment: number };
-export type AssetItem = { id: string; name: string; type: AssetType; value: number };
+export type PropertyUse = "home" | "rental" | "other";
+export type AssetItem = { id: string; name: string; type: AssetType; value: number; use?: PropertyUse }; // use: only for property
 
 export type Situation = {
   behindOnBills: boolean;

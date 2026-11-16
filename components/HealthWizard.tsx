@@ -186,6 +186,14 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                   <div><label htmlFor={`at${i}`} className="text-xs">Type</label><select id={`at${i}`} value={x.type} onChange={e => upd("assets", i, { type: e.target.value as AssetType })} className="mt-1">{ASSET_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
                   {money("Value", x.value, v => upd("assets", i, { value: v }), `av${i}`)}
                   {del("assets", i, x.name)}
+                  {x.type === "property" && (
+                    <fieldset className="sm:col-span-4"><legend className="text-xs font-semibold text-navy-700">How is {x.name || "this property"} used?</legend>
+                      <div className="mt-1 flex flex-wrap gap-2">{([["home", "🏠 I live here"], ["rental", "🔑 Rented out"], ["other", "Empty / holiday home"]] as const).map(([v, l]) => (
+                        <label key={v} className={cx("cursor-pointer rounded-full border px-3 py-1 text-sm font-normal", x.use === v ? "border-teal-500 bg-teal-50 text-teal-800" : "border-navy-200 bg-white text-navy-700")}>
+                          <input type="radio" name={`use${i}`} value={v} checked={x.use === v} onChange={() => upd("assets", i, { use: v })} className="sr-only" />{l}
+                        </label>))}</div>
+                    </fieldset>
+                  )}
                 </div>
               ))}
               <div className="flex flex-wrap gap-2">

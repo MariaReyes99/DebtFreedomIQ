@@ -28,7 +28,7 @@ export default function GapPlan({ options, gap, fmt }: { options: Solution[]; ga
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2"><Badge tone={KIND[o.kind].tone}>{KIND[o.kind].label}</Badge><h3 className="font-semibold">{o.title}</h3></div>
                 <div className="text-right">
-                  {o.monthly > 0 ? <p className="font-bold text-emerald-600">{o.kind === "fix" ? "up to " : "+"}{fmt(o.monthly)}/mo</p> : <p className="text-sm text-navy-500">amount varies</p>}
+                  {o.monthly > 0 ? <p className="font-bold text-emerald-600">{o.kind === "fix" ? "up to " : "+"}{fmt(o.monthly)}/mo</p> : <p className="text-sm text-navy-500">{o.kind === "fix" ? "check this" : "amount varies"}</p>}
                   {o.oneOff ? <p className="text-xs text-navy-500">+ {fmt(o.oneOff)} one-off</p> : null}
                 </div>
               </div>
