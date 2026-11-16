@@ -7,6 +7,7 @@ import { Badge, Button, Card, ScoreRing, StatCard, Disclaimer, cx } from "./ui";
 import { ExpenseDonut, BalanceBars, DebtBars } from "./charts";
 import NextSteps from "./NextSteps";
 import GapPlan from "./GapPlan";
+import CashRunway from "./CashRunway";
 import { buildSolutions } from "@/lib/solutions";
 
 const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
@@ -63,6 +64,8 @@ export default function HealthResults({ input, metrics: m, advice, help, country
         <StatCard label="Emergency fund" icon="🛟" value={`${m.emergencyMonths.toFixed(1)} mo`} tone={m.emergencyMonths >= 3 ? "good" : m.emergencyMonths >= 1 ? "warn" : "bad"} sub={`Score ${m.emergencyScore}/100 · aim for 3–6 months`} />
         <StatCard label="High-interest debt" icon="🔥" value={pct(m.highInterestShare)} tone={m.highInterestShare > 0.3 ? "bad" : m.highInterestShare > 0 ? "warn" : "good"} sub="Share of debt at 15%+" />
       </div>
+
+      <CashRunway income={m.monthlyIncome} living={m.monthlyExpenses} debt={m.monthlyDebtPayments} savings={input.savings} symbol={c.symbol} fmt={f} />
 
       {/* Recommendations */}
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">

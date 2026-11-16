@@ -9,6 +9,7 @@ import type { Goal } from "@/lib/types";
 import type { ScenarioResult } from "@/lib/plan";
 import { ScoreHistory } from "@/components/charts";
 import NextSteps from "@/components/NextSteps";
+import CashRunway from "@/components/CashRunway";
 import PendingCheckSaver from "@/components/PendingCheckSaver";
 import { Badge, Button, Card, PageHeader, ScoreRing, StatCard } from "@/components/ui";
 
@@ -87,6 +88,8 @@ export default async function Dashboard() {
           </Card>
         </div>
       </div>
+
+      <div className="mt-6"><CashRunway income={m.monthlyIncome} living={m.monthlyExpenses} debt={m.monthlyDebtPayments} savings={latest.input.savings} symbol={c.symbol} fmt={f} /></div>
 
       <Card as="section" className="mt-6 border-teal-200 bg-teal-50/60">
         <NextSteps steps={latest.advice.nextSteps} assessmentId={latest.id} initialDone={latest.completedSteps} loggedIn />

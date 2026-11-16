@@ -1,6 +1,6 @@
 "use client";
 import {
-  LabelList, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend, AreaChart, Area,
+  ComposedChart, ReferenceLine, LabelList, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend, AreaChart, Area,
 } from "recharts";
 
 const PALETTE = ["#13a796", "#1d3561", "#5fdac9", "#4a6290", "#f59e0b", "#94a7c8", "#0d6b62", "#c4d0e4", "#ef4444"];
@@ -175,6 +175,41 @@ export function ScoreHistory({ data }: { data: { date: string; health: number; s
         </ResponsiveContainer>
       </div>
       <SrTable caption="Score history" rows={data.map(d => [d.date, `health ${d.health}, stress ${d.stress}`])} />
+    </figure>
+  );
+}
+
+/** Money in vs money out each month, and how long cash savings last at this rate. */
+export function CashRunwayChart({ income, living, debt, savings, symbol, months }: { income: number; living: number; debt: number; savings: number; symbol: string; months: number }) {
+  const now = new Date();
+  const surplus = income - living - debt;
+  const data = Array.from({ length: months + 1 }, (_, k) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + k, 1);
+    return { label: k === 0 ? "Now" : d.toLocaleDateString("en-NZ", { month: "short", year: "2-digit" }), in: k === 0 ? null : income, living: k === 0 ? null : living, debt: k === 0 ? null : debt, cash: Math.round(savings + k * surplus) };
+  });
+  const runOut = surplus < 0 ? savings / -surplus : null;
+  const runOutLabel = runOut !== null && runOut <= months ? data[Math.min(months, Math.ceil(runOut))]?.label : null;
+  const f = full(symbol);
+  return (
+    <figure>
+      <div className="h-80" aria-hidden>
+        <ResponsiveContainer>
+          <ComposedChart data={data} margin={{ top: 20, right: 12, left: 8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={months > 12 ? 1 : 0} />
+            <YAxis tickFormatter={short(symbol)} tick={{ fontSize: 11 }} width={60} />
+            <Tooltip formatter={(v, n) => [f(v), n]} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <ReferenceLine y={0} stroke="#ef4444" strokeWidth={1.5} />
+            {runOutLabel && <ReferenceLine x={runOutLabel} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "Cash runs out", position: "top", fill: "#b91c1c", fontSize: 12, fontWeight: 700 }} />}
+            <Bar dataKey="in" name="Money in" fill="#13a796" isAnimationActive={false} barSize={14} />
+            <Bar dataKey="living" name="Living costs" stackId="out" fill="#94a7c8" isAnimationActive={false} barSize={14} />
+            <Bar dataKey="debt" name="Debt repayments" stackId="out" fill="#1d3561" isAnimationActive={false} barSize={14} />
+            <Line dataKey="cash" name="Cash savings left" type="linear" stroke={surplus < 0 ? "#ef4444" : "#0d6b62"} strokeWidth={3} dot={{ r: 3 }} isAnimationActive={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <SrTable caption="Cash savings left each month" rows={data.map(r => [r.label, f(r.cash)])} />
     </figure>
   );
 }
