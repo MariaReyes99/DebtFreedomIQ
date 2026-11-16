@@ -12,7 +12,7 @@ import { money } from "./countries";
 const MODEL = process.env.OPENAI_MODEL || "gpt-5.6-terra";
 export const aiEnabled = () => Boolean(process.env.OPENAI_API_KEY);
 let client: OpenAI | null = null;
-const ai = () => (client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
+const ai = () => (client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 15_000, maxRetries: 1 }) /* slow AI → fall back to the rules engine */);
 
 const GUARDRAILS = `You are DebtFreedomIQ, a calm, non-judgemental financial guidance assistant.
 Rules:

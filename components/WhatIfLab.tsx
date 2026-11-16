@@ -44,6 +44,8 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
   const view = (inp: AssessmentInput) => ({ m: calculate(inp), t: debtTimeline(inp), long: plus && ages ? longView(inp, ages, false) : null });
   const before = useMemo(() => view(base), [base, plus, age, retireAge]); // eslint-disable-line react-hooks/exhaustive-deps
   const result = useMemo(() => { const r = applyChoices(base, choices); return { ...r, ...view(r.input) }; }, [base, choices, plus, age, retireAge]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Saved scenarios are recalculated only when the list, the numbers or the ages change, not on every keystroke
+  const savedViews = useMemo(() => (plus ? saved.map(s => view(applyChoices(base, { ...NO_CHOICES, ...s.choices }).input)) : []), [saved, base, plus, age, retireAge]); // eslint-disable-line react-hooks/exhaustive-deps
   const changed = !isEmpty(ch);
   const B = before.m, A = result.m;
 
@@ -246,7 +248,7 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
               <thead><tr className="text-navy-500"><th /><th className="text-right font-normal">Now</th>{saved.map(s => <th key={s.name} className="text-right font-semibold text-navy-800"><button type="button" onClick={() => setCh({ ...NO_CHOICES, ...s.choices })} className="hover:text-teal-700" title="Load this scenario">{s.name}</button></th>)}</tr></thead>
               <tbody>
                 {(() => {
-                  const cols = [before, ...saved.map(s => { const r = applyChoices(base, { ...NO_CHOICES, ...s.choices }); return view(r.input); })];
+                  const cols = [before, ...savedViews];
                   const rows: [string, (v: typeof before) => string][] = [
                     ["Each month", v => f(v.m.monthlySurplus)], ["Total debt", v => f(v.m.totalDebts)], ["Interest still to pay", v => f(v.t.interest)],
                     ["Mortgage-free", v => when(v.t.mortgageFree)], ["Net worth today", v => f(v.m.netWorth)],
