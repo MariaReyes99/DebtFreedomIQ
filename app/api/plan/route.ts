@@ -1,3 +1,4 @@
+import type { Goal } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { loadLatest } from "@/lib/assessment";
@@ -14,11 +15,15 @@ export async function POST(req: Request) {
   const strategy = body.strategy === "snowball" ? "snowball" : "avalanche";
   const latest = await loadLatest(user.id);
   if (!latest) return NextResponse.json({ error: "Complete your Financial Health check first." }, { status: 400 });
+  if (latest.incomplete) return NextResponse.json({ error: "Your last check was saved without its debts. Please redo your Financial Health check first." }, { status: 400 });
 
   const plan = await makePlan(latest.input, latest.metrics, strategy);
   const supabase = await createClient();
   const { data: prev } = await supabase.from("financial_plans").select("goals").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-  const goals = (prev?.goals as unknown[] | undefined)?.length ? prev!.goals : defaultGoals(latest.input, latest.metrics, plan.scenarios);
+  // Fresh targets from the latest numbers, plus any goals the person added themselves
+  const fresh = defaultGoals(latest.input, latest.metrics, plan.scenarios);
+  const own = ((prev?.goals as Goal[] | undefined) ?? []).filter(g => !fresh.some(f => f.title === g.title));
+  const goals = [...fresh, ...own];
   const { data, error } = await supabase.from("financial_plans").insert({
     user_id: user.id, assessment_id: latest.id, strategy, scenarios: plan.scenarios, ai_summary: plan.summary, goals,
     title: `Freedom Plan — ${new Date().toLocaleDateString()}`,

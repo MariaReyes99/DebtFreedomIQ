@@ -212,6 +212,9 @@ create policy "own payments read" on public.payments for select using (auth.uid(
 -- Property use: home | rental | other (so the plan never suggests selling the family home by mistake)
 alter table public.assets add column if not exists use text;
 
+-- Full copy of each health check's answers (backup for rebuilding plans)
+alter table public.financial_assessments add column if not exists input jsonb;
+
 -- ── Access for the app's API keys. Newer Supabase projects don't grant this automatically. Safe to run again. ──
 grant usage on schema public to anon, authenticated, service_role;
 -- The server (secret key) manages everything; Row Level Security does not apply to it

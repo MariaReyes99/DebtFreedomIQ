@@ -47,14 +47,16 @@ export async function saveAssessment(userId: string, input: AssessmentInput, met
     situation: input.situation, goals: input.goals || null,
     recommendations: { summary: advice.summary, recommendations: advice.recommendations, nextSteps: advice.nextSteps, incomes: input.incomes },
     ai_source: advice.source,
+    input, // full copy of what was entered, so the plan can always be rebuilt
   }).select("id").single();
   if (error || !data) { console.error("saveAssessment", error); return null; }
   const aid = data.id as string;
-  await Promise.all([
+  const results = await Promise.all([
     input.debts.length && supabase.from("debts").insert(input.debts.map(d => ({ user_id: userId, assessment_id: aid, name: d.name, type: d.type, balance: d.balance, interest_rate: d.rate, min_payment: d.minPayment }))),
     input.assets.length && supabase.from("assets").insert(input.assets.map(a => ({ user_id: userId, assessment_id: aid, name: a.name, type: a.type, value: a.value, use: a.use ?? null }))),
     input.expenses.length && supabase.from("expenses").insert(input.expenses.map(e => ({ user_id: userId, assessment_id: aid, category: e.category, amount: e.amount, essential: e.essential }))),
   ]);
+  for (const r of results) if (r && typeof r === "object" && "error" in r && r.error) console.error("saveAssessment line items:", r.error.message);
   return aid;
 }
 
@@ -69,7 +71,7 @@ export async function loadLatest(userId: string) {
     supabase.from("expenses").select("*").eq("assessment_id", a.id),
   ]);
   const rec = (a.recommendations ?? {}) as { summary?: string; recommendations?: Advice["recommendations"]; nextSteps?: string[]; incomes?: AssessmentInput["incomes"] };
-  const input: AssessmentInput = {
+  const rows: AssessmentInput = {
     country: a.country ?? DEFAULT_COUNTRY,
     incomes: rec.incomes?.length ? rec.incomes : [{ id: "i1", source: "Income", amount: Number(a.monthly_income) }],
     expenses: (expenses ?? []).map(e => ({ id: e.id, category: e.category, amount: Number(e.amount), essential: e.essential })),
@@ -77,6 +79,11 @@ export async function loadLatest(userId: string) {
     assets: (assets ?? []).map(x => ({ id: x.id, name: x.name, type: x.type, value: Number(x.value), ...(x.use ? { use: x.use } : {}) })),
     savings: Number(a.savings), situation: a.situation, goals: a.goals ?? "",
   };
+  // Prefer the full saved copy; fall back to the line-item tables (older saves)
+  const saved = a.input && typeof a.input === "object" ? sanitize(a.input) : null;
+  const input: AssessmentInput = saved && (saved.debts.length || saved.expenses.length || saved.incomes.length) ? saved : rows;
+  // Old save where the debts didn't get stored: don't pretend the person is debt-free
+  const incomplete = Number(a.total_debts) > 0 && input.debts.length === 0;
   const advice: Advice = { summary: rec.summary ?? "", recommendations: rec.recommendations ?? [], nextSteps: rec.nextSteps ?? [], source: a.ai_source === "openai" ? "openai" : "rules" };
-  return { id: a.id as string, createdAt: a.created_at as string, input, metrics: calculate(input), advice, completedSteps: (a.completed_steps ?? []) as number[] };
+  return { id: a.id as string, createdAt: a.created_at as string, input, metrics: calculate(input), advice, completedSteps: (a.completed_steps ?? []) as number[], incomplete };
 }

@@ -22,15 +22,20 @@ export default async function PlanPage() {
   // Premium with a saved plan → full, editable plan
   if (user && isPremium && latest) {
     const supabase = await createClient();
-    const { data: saved } = await supabase.from("financial_plans").select("id,created_at,strategy,scenarios,ai_summary,goals").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    const { data: saved } = await supabase.from("financial_plans").select("id,created_at,updated_at,strategy,scenarios,ai_summary,goals").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
     const cc = toCountryCode(latest.input.country) ?? DEFAULT_COUNTRY;
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
         <PageHeader eyebrow="Premium" title="My Freedom Plan">Three ways to become debt-free, built from your latest Financial Health check ({new Date(latest.createdAt).toLocaleDateString()}).</PageHeader>
-        {saved ? (
+        {latest.incomplete ? (
+          <Card className="border-amber-300 bg-amber-50 text-center"><h2 className="text-xl font-bold text-amber-900">We need your numbers again</h2><p className="mx-auto mt-2 max-w-lg text-amber-900">Your last Financial Health check was saved without its debts (a database setup issue that&apos;s now fixed), so we can&apos;t build an accurate plan from it. Please go through the check again; your answers are quick to re-enter.</p><Button href="/health" className="mt-5">Redo my Financial Health check</Button></Card>
+        ) : saved ? (<>
+          {(new Date(saved.updated_at ?? saved.created_at) < new Date(latest.createdAt)) && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4"><p className="text-sm text-teal-900"><strong>Your numbers have changed</strong> since this plan was made ({new Date(saved.updated_at ?? saved.created_at).toLocaleDateString()}). Rebuild it from your latest check.</p><GeneratePlanButton label="Rebuild my plan" /></div>
+          )}
           <PlanView countryCode={cc} editable hasConsumerDebt={latest.metrics.consumerDebts > 0}
             plan={{ id: saved.id, createdAt: saved.created_at, strategy: saved.strategy, scenarios: saved.scenarios, summary: saved.ai_summary, goals: saved.goals } as PlanData} />
-        ) : (
+        </>) : (
           <Card className="text-center"><h2 className="text-xl font-bold">Ready to build your Freedom Plan</h2><p className="mx-auto mt-2 max-w-lg text-navy-600">We&apos;ll model Conservative, Balanced and Aggressive scenarios from your latest numbers and save the plan to your account.</p><div className="mt-5 flex justify-center"><GeneratePlanButton /></div></Card>
         )}
         <Disclaimer className="mt-6" />
