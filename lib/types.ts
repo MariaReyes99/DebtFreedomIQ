@@ -27,6 +27,8 @@ export type AssessmentInput = {
   savings: number; // cash / emergency savings
   situation: Situation;
   goals: string;
+  age?: number;        // optional, for the retirement picture
+  retireAge?: number;
 };
 
 export type Metrics = {

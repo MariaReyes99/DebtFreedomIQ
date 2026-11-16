@@ -17,6 +17,7 @@ export default function GapPlan({ options, gap, fmt }: { options: Solution[]; ga
           <h2 className="text-xl font-bold">{gap > 0 ? `Ways to close your ${fmt(gap)}/month gap` : "Ways to boost your monthly cash flow"}</h2>
           <p className="mt-1 text-sm text-navy-600">Options based on your numbers, biggest impact first. Some are alternatives (e.g. sell <em>or</em> restructure the same property), so you won&apos;t need them all. Estimates only. Discuss big decisions with a free financial mentor or licensed adviser.</p>
         </div>
+        <a href="/whatif" className="text-sm font-semibold text-teal-700 hover:underline">🧪 Test your own choices in What-if →</a>
         {gap > 0 && <p className="text-sm font-semibold text-navy-700">Options found: up to <span className="text-teal-700">{fmt(real.reduce((a, o) => a + o.monthly, 0))}/month</span></p>}
       </div>
       <ol className="mt-4 space-y-3">

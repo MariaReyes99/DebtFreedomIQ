@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-type BtnProps = { children: ReactNode; href?: string; onClick?: () => void; variant?: "primary" | "secondary" | "ghost" | "dark"; size?: "sm" | "md" | "lg"; className?: string; type?: "button" | "submit"; disabled?: boolean; full?: boolean };
-export function Button({ children, href, onClick, variant = "primary", size = "md", className, type = "button", disabled, full }: BtnProps) {
+type BtnProps = { children: ReactNode; href?: string; onClick?: () => void; variant?: "primary" | "secondary" | "ghost" | "dark"; size?: "sm" | "md" | "lg"; className?: string; type?: "button" | "submit"; disabled?: boolean; full?: boolean; target?: string; rel?: string };
+export function Button({ children, href, onClick, variant = "primary", size = "md", className, type = "button", disabled, full, target, rel }: BtnProps) {
   const cls = cx(
     "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition focus-visible:outline-3 disabled:opacity-50 disabled:cursor-not-allowed",
     size === "sm" && "px-3.5 py-1.5 text-sm", size === "md" && "px-5 py-2.5 text-[15px]", size === "lg" && "px-7 py-3.5 text-base",
@@ -13,7 +13,7 @@ export function Button({ children, href, onClick, variant = "primary", size = "m
     variant === "ghost" && "text-teal-700 hover:bg-teal-50",
     variant === "dark" && "bg-navy-900 text-white hover:bg-navy-800",
     full && "w-full", className);
-  return href ? <Link href={href} className={cls}>{children}</Link> : <button type={type} className={cls} disabled={disabled} onClick={onClick}>{children}</button>;
+  return href ? (target || /^https?:/.test(href) ? <a href={href} className={cls} target={target} rel={rel}>{children}</a> : <Link href={href} className={cls}>{children}</Link>) : <button type={type} className={cls} disabled={disabled} onClick={onClick}>{children}</button>;
 }
 
 export function Card({ children, className, as: As = "div" }: { children: ReactNode; className?: string; as?: "div" | "section" | "article" }) {

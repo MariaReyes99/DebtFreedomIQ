@@ -24,6 +24,8 @@ export function sanitize(raw: unknown): AssessmentInput {
     savings: n(r.savings),
     situation: { behindOnBills: !!s.behindOnBills, collectionsOrCourt: !!s.collectionsOrCourt, cantAffordFood: !!s.cantAffordFood, housingAtRisk: !!s.housingAtRisk, medicalDebt: !!s.medicalDebt, distressed: !!s.distressed },
     goals: str(r.goals, 600),
+    ...(n(r.age) >= 16 && n(r.age) <= 100 ? { age: Math.round(n(r.age)) } : {}),
+    ...(n(r.retireAge) >= 40 && n(r.retireAge) <= 90 ? { retireAge: Math.round(n(r.retireAge)) } : {}),
   };
 }
 

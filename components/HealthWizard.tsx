@@ -214,6 +214,10 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                   {SITUATION.map(([k, l]) => <label key={k} className="flex items-start gap-3 rounded-lg p-2 font-normal text-navy-700 hover:bg-navy-50"><input type="checkbox" checked={data.situation[k]} onChange={e => setData(d => ({ ...d, situation: { ...d.situation, [k]: e.target.checked } }))} className="mt-0.5" />{l}</label>)}
                 </div>
               </fieldset>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div><label htmlFor="age">Your age <span className="font-normal text-navy-500">(optional, for your retirement picture)</span></label><input id="age" type="number" inputMode="numeric" min={16} max={100} value={data.age ?? ""} onChange={e => setData(d => ({ ...d, age: e.target.value ? Number(e.target.value) : undefined }))} className="mt-1.5" /></div>
+                <div><label htmlFor="retireAge">Age you&apos;d like to retire <span className="font-normal text-navy-500">(optional)</span></label><input id="retireAge" type="number" inputMode="numeric" min={40} max={90} value={data.retireAge ?? ""} onChange={e => setData(d => ({ ...d, retireAge: e.target.value ? Number(e.target.value) : undefined }))} placeholder="65" className="mt-1.5" /></div>
+              </div>
               <div><label htmlFor="goals">Your goals <span className="font-normal text-navy-500">(optional)</span></label><textarea id="goals" rows={3} maxLength={600} value={data.goals} onChange={e => setData(d => ({ ...d, goals: e.target.value }))} placeholder={`e.g. Clear my credit card this year, save a ${fmtMoney(c, c.code === "PH" ? 100000 : 5000)} buffer, pay the mortgage off faster`} className="mt-1.5" /></div>
               <div className="grid grid-cols-2 gap-2 rounded-xl bg-navy-50 p-4 text-sm sm:grid-cols-4">
                 <div><p className="text-navy-500">Income</p><p className="font-bold">{sym}{totals.income.toLocaleString()}/mo</p></div>

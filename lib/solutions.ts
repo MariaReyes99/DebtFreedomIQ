@@ -11,7 +11,7 @@ export type Solution = {
   caution?: string;
 };
 
-const pmt = (principal: number, ratePct: number, months: number) => {
+export const pmt = (principal: number, ratePct: number, months: number) => {
   const i = ratePct / 100 / 12;
   return i === 0 ? principal / months : (principal * i) / (1 - Math.pow(1 + i, -months));
 };
@@ -37,7 +37,7 @@ const NO_INTEREST: Record<string, string> = {
 };
 
 /** Match each property-type debt to a property asset (by name, else by order). */
-function pairProperties(debts: DebtItem[], assets: AssetItem[]) {
+export function pairProperties(debts: DebtItem[], assets: AssetItem[]) {
   const props = assets.filter(a => a.type === "property" && a.value > 0);
   const used = new Set<string>();
   return debts.filter(d => d.balance > 0 && isPropertyDebt(d)).map(d => {

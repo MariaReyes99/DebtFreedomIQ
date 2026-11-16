@@ -65,7 +65,7 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
         <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-5 text-red-900" role="alert">
           <p className="text-lg font-bold">First: close your {f(short)}/month shortfall</p>
           <p className="mt-1 text-sm">This plan assumes you keep making every repayment, but right now more goes out each month than comes in.{runOutDate && cash!.savings > 0 ? ` At this rate your ${f(cash!.savings)} savings run out around ${runOutDate}.` : ""} Until the gap is closed there&apos;s no spare money for extra repayments, so all three scenarios look almost the same.</p>
-          <div className="mt-3 flex flex-wrap gap-2"><Button href="/health" size="sm">See &ldquo;Ways to close your gap&rdquo;</Button><Button href="/help" size="sm" variant="secondary">Find free help</Button></div>
+          <div className="mt-3 flex flex-wrap gap-2"><Button href="/health" size="sm">See &ldquo;Ways to close your gap&rdquo;</Button><Button href="/whatif" size="sm" variant="secondary">🧪 Test choices (what-if)</Button><Button href="/help" size="sm" variant="secondary">Find free help</Button></div>
         </div>
       )}
 
