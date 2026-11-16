@@ -13,7 +13,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen font-sans">
         <a href="#main" className="sr-only sr-only-focusable">Skip to content</a>
         <Header />
