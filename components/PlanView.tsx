@@ -5,7 +5,7 @@ import { fmtMonths, monthToDate, SCENARIOS } from "@/lib/plan";
 import type { Goal } from "@/lib/types";
 import { COUNTRIES, money, type CountryCode } from "@/lib/countries";
 import { Badge, Button, Card, cx } from "./ui";
-import { ScenarioChart, SavingsArea } from "./charts";
+import { ScenarioChart } from "./charts";
 
 export type PlanData = {
   id?: string; createdAt?: string; strategy: Strategy; scenarios: ScenarioResult[];
@@ -13,7 +13,7 @@ export type PlanData = {
   goals: Goal[];
 };
 
-export default function PlanView({ countryCode, plan: initial, editable, hasConsumerDebt, cash }: { countryCode: CountryCode; plan: PlanData; editable: boolean; hasConsumerDebt: boolean; cash?: { surplus: number; savings: number } }) {
+export default function PlanView({ countryCode, plan: initial, editable, hasConsumerDebt, cash, embedded, paydownBlocked }: { countryCode: CountryCode; plan: PlanData; editable: boolean; hasConsumerDebt: boolean; cash?: { surplus: number; savings: number }; embedded?: boolean; paydownBlocked?: string }) {
   const c = COUNTRIES[countryCode];
   const f = (v: number) => money(c, v);
   const [plan, setPlan] = useState(initial);
@@ -50,7 +50,7 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
   return (
     <div className="space-y-6">
       {/* How to read and use this plan */}
-      <details className="no-print rounded-2xl border border-navy-100 bg-white p-5" open>
+      {!embedded && <details className="no-print rounded-2xl border border-navy-100 bg-white p-5" open>
         <summary className="cursor-pointer text-lg font-bold">How this plan works and what to do 🧭</summary>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-navy-700">
           <li><strong>Where the numbers come from:</strong> your latest Financial Health check (income, living costs, each debt&apos;s balance, interest rate and repayment, and your savings). Update the check and click <em>Rebuild my plan</em> whenever things change.</li>
@@ -59,7 +59,7 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
           <li><strong>Debt-free timeline:</strong> how much you&apos;d owe over time under each scenario, assuming your repayments keep being made.</li>
           <li><strong>What to do:</strong> follow the milestones for the scenario you pick, set your goals at the bottom, and ask a what-if question if you&apos;re unsure.</li>
         </ol>
-      </details>
+      </details>}
 
       {short > 0 && (
         <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-5 text-red-900" role="alert">
@@ -69,6 +69,9 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
         </div>
       )}
 
+      {paydownBlocked ? (
+        <Card className="border-amber-200 bg-amber-50"><p className="font-semibold text-amber-900">Payoff scenarios start after Stages 1 and 2</p><p className="mt-1 text-sm text-amber-900">{paydownBlocked}</p></Card>
+      ) : (<>
       {/* Summary */}
       <Card className="bg-gradient-to-br from-navy-900 to-navy-800 text-white">
         <div className="flex flex-wrap items-center gap-2"><Badge tone="teal">{plan.summary.source === "openai" ? "✨ AI-generated plan" : "Freedom Plan"}</Badge>{plan.createdAt && <span className="text-xs text-navy-300">Saved {new Date(plan.createdAt).toLocaleDateString()}</span>}</div>
@@ -141,17 +144,14 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card as="section">
-          <h2 className="text-xl font-bold">Savings target</h2>
-          <p className="mt-1 text-sm text-navy-600">Emergency fund goal: <strong>{f(s.emergencyTarget)}</strong>, reached <strong>{s.emergencyReachedMonth === null ? "later" : s.emergencyReachedMonth === 0 ? "already ✓" : monthToDate(s.emergencyReachedMonth)}</strong>.</p>
-          <div className="mt-3"><SavingsArea series={s.series} symbol={c.symbol} target={s.emergencyTarget} /></div>
-        </Card>
+      <div className="grid gap-6">
         <Card as="section">
           <h2 className="text-xl font-bold">Smart tips</h2>
           <ul className="mt-3 space-y-2">{plan.summary.tips.map((t, i) => <li key={i} className="flex gap-2"><span aria-hidden className="text-teal-600">💡</span><span>{t}</span></li>)}</ul>
         </Card>
       </div>
+
+      </>)}
 
       {/* Goals */}
       <Card as="section">

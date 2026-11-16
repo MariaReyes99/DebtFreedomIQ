@@ -215,6 +215,10 @@ alter table public.assets add column if not exists use text;
 -- Full copy of each health check's answers (backup for rebuilding plans)
 alter table public.financial_assessments add column if not exists input jsonb;
 
+-- Freedom Plan: the Simulator choices it's built from, and which steps are ticked off
+alter table public.financial_plans add column if not exists choices jsonb;
+alter table public.financial_plans add column if not exists steps_done jsonb not null default '[]'::jsonb;
+
 -- ── Access for the app's API keys. Newer Supabase projects don't grant this automatically. Safe to run again. ──
 grant usage on schema public to anon, authenticated, service_role;
 -- The server (secret key) manages everything; Row Level Security does not apply to it

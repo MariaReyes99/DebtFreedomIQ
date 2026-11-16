@@ -115,3 +115,9 @@ middleware.ts              Session refresh, protected routes, anonymous id
 ### Financial Simulator (Premium Plus, yearly)
 - Premium (one-time): Freedom Plan + one what-if at a time (property and investment choices).
 - Premium Plus (`plusPrice` per year in `lib/countries.ts`; `PREMIUM_PLUS_ENABLED=false` hides it): refinance / extra repayments / new term, buy a property, invest or use savings as a lump sum, point released money at a chosen debt, interest saved and debt-free dates, net worth in 10 years and at retirement (Library engine copied to `lib/projection/`), up to 3 saved scenarios side by side.
+
+### Freedom Plan (staged) + Simulator analysis
+- `/plan` = dated steps in three stages: **Stabilise** (close the monthly gap: essential calls, number checks, the person's Simulator choices, then suggested options until the gap is covered, with deadlines tightened by the cash-runway date), **Buffer** (3 months of costs), **Pay down** (the 3 scenarios, built from the numbers *after* the chosen moves; hidden until there is spare money). Steps are ticked off and saved (`financial_plans.steps_done`); choices are stored in `financial_plans.choices`. Logic: `lib/freedom.ts`.
+- Simulator → "Use these choices in my Freedom Plan".
+- Simulator (Premium Plus): strengths, weaknesses & risks now vs with choices (`lib/projection/analysis.ts`, from the Library) and an investment platform fee comparison (`lib/projection/platforms.ts`).
+- Run the latest `supabase/schema.sql` (adds `financial_plans.choices` and `steps_done`).

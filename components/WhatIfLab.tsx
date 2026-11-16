@@ -8,6 +8,9 @@ import { libraryLink, LIBRARY_URL } from "@/lib/library";
 import { fmtMonths, monthToDate } from "@/lib/plan";
 import { COUNTRIES, money, type CountryCode } from "@/lib/countries";
 import CashRunway from "./CashRunway";
+import RiskAnalysis from "./RiskAnalysis";
+import PlatformCompare from "./PlatformCompare";
+import { useRouter } from "next/navigation";
 import { Badge, Button, Card, cx } from "./ui";
 
 const SAVED = "dfiq_whatif_scenarios";
@@ -27,7 +30,14 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
   const others = base.assets.filter(a => ["investments", "business", "other", "vehicle"].includes(a.type) && a.value > 0);
   const retirement = base.assets.find(a => a.type === "retirement" && a.value > 0);
   const debts = base.debts.filter(d => d.balance > 0);
+  const router = useRouter();
   const [ch, setCh] = useState<Choices>(NO_CHOICES);
+  const [planMsg, setPlanMsg] = useState("");
+  const toPlan = async () => {
+    setPlanMsg("Building your plan…");
+    const r = await fetch("/api/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ strategy: "avalanche", choices: ch }) });
+    if (r.ok) router.push("/plan"); else setPlanMsg((await r.json().catch(() => ({}))).error ?? "Couldn't build the plan.");
+  };
   const choices = useDeferredValue(ch);
   const [age, setAge] = useState<number | "">(base.age ?? "");
   const [retireAge, setRetireAge] = useState<number | "">(base.retireAge ?? "");
@@ -214,6 +224,8 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
               : <p className="mt-3 rounded-xl bg-navy-50 p-3 text-xs text-navy-700">Want to save this and compare it with other choices? <a className="font-semibold text-teal-700" href="/checkout?tier=premium_plus">Upgrade to Premium Plus</a></p>)}
           </Card>
 
+          {changed && <Card className="border-teal-300 bg-teal-50"><p className="font-semibold text-teal-900">Happy with these choices?</p><p className="mt-1 text-sm text-teal-900">Turn them into a dated, step-by-step Freedom Plan you can tick off.</p><Button className="mt-3" full onClick={toPlan}>Use these choices in my Freedom Plan →</Button>{planMsg && <p className="mt-2 text-xs text-teal-800">{planMsg}</p>}</Card>}
+
           <Card as="section">
             <h2 className="text-lg font-bold">Your retirement picture</h2>
             {!plus ? <p className="mt-1 text-sm text-navy-600">🔒 Premium Plus shows your net worth in 10 years and at retirement for every scenario, and opens the full picture in the Investment Research Library.</p> : (<>
@@ -237,6 +249,11 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
           </Card>
         </div>
       </div>
+
+      {plus && ages ? <RiskAnalysis before={base} after={result.input} changed={changed} ages={ages} />
+        : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Strengths, weaknesses &amp; risks</h2><p className="mt-1 text-sm text-navy-600">{plus ? "Enter your age (in “Your retirement picture”) to see the analysis." : "🔒 Premium Plus analyses your finances now and with your choices: what's strong, what's weak, and the risks (interest rates, markets, property concentration, how long savings last)."}</p></Card>}
+      {plus ? <PlatformCompare startBalance={result.input.assets.filter(a => a.type === "investments" || a.type === "retirement").reduce((t, a) => t + a.value, 0) || 10000} monthly={Math.max(0, A.monthlySurplus)} years={ages ? Math.max(5, (ages.retireAge ?? 65) - ages.age) : 20} countryCode={countryCode} fmt={f} />
+        : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Investment platform comparison</h2><p className="mt-1 text-sm text-navy-600">🔒 Premium Plus compares what different platforms&apos; and funds&apos; fees do to your investments over time.</p></Card>}
 
       {changed && <CashRunway income={A.monthlyIncome} living={A.monthlyExpenses} debt={A.monthlyDebtPayments} savings={result.input.savings} symbol={c.symbol} fmt={f} />}
 
