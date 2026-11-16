@@ -70,7 +70,7 @@ export default async function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <PageHeader eyebrow="Home" title={`Hi ${displayName} 👋`} actions={<><Button href="/health" variant="secondary">↻ Update my numbers</Button><Button href={isPremium ? "/plan" : "/pricing"}>{isPremium ? "My Freedom Plan" : "Unlock Premium"}</Button></>}>
-        Last check: {new Date(latest.createdAt).toLocaleDateString()} {isPremium ? <Badge tone="teal" className="ml-2">Premium</Badge> : <Badge tone="gray" className="ml-2">Free plan</Badge>}
+        Last check: {new Date(latest.createdAt).toLocaleString("en-NZ", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })} · <a href="/health?edit=1" className="font-semibold text-teal-700 hover:underline">Edit my answers</a> {isPremium ? <Badge tone="teal" className="ml-2">Premium</Badge> : <Badge tone="gray" className="ml-2">Free plan</Badge>}
       </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
@@ -79,12 +79,15 @@ export default async function Dashboard() {
           <ScoreRing value={m.stressScore} label="Stress" sub={m.stressBand} invert />
         </Card>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label="Net worth" value={f(m.netWorth)} tone={m.netWorth >= 0 ? "good" : "bad"} />
+          <StatCard label="Net worth" value={f(m.netWorth)} tone={m.netWorth >= 0 ? "good" : "bad"} sub={`${f(m.totalAssets)} owned − ${f(m.totalDebts)} owed`} />
           <StatCard label="Debt-to-income" value={`${(m.debtToIncome * 100).toFixed(0)}%`} tone={m.debtToIncome <= 0.36 ? "good" : "bad"} />
           <StatCard label="Monthly surplus" value={f(m.monthlySurplus)} tone={m.monthlySurplus >= 0 ? "good" : "bad"} />
           <StatCard label="Emergency fund" value={`${m.emergencyMonths.toFixed(1)} mo`} tone={m.emergencyMonths >= 3 ? "good" : "warn"} />
           <Card className="col-span-2 md:col-span-4">
-            <p className="text-sm text-navy-500">{delta === null ? "Do another check next month to start tracking your progress." : delta >= 0 ? `📈 Your health score is up ${delta} points since your first check.` : `Your health score is down ${-delta} points since your first check. Let's look at why.`}</p>
+            <p className="text-sm text-navy-600"><strong>What you own (in this check):</strong> {[...latest.input.assets.filter(x => x.value > 0).map(x => `${x.name} ${f(x.value)}`), ...(latest.input.savings > 0 ? [`Savings ${f(latest.input.savings)}`] : [])].join(" · ") || "nothing entered"}. Missing something? <a href="/health?edit=1" className="font-semibold text-teal-700">Edit my answers</a>, then click &ldquo;See my Financial Health&rdquo; to save.</p>
+          </Card>
+          <Card className="col-span-2 md:col-span-4">
+            <p className="text-sm text-navy-500">{delta === null ? "Do another check next month to start tracking your progress." : delta === 0 ? "Your health score is the same as your first check." : delta > 0 ? `📈 Your health score is up ${delta} points since your first check.` : `Your health score is down ${-delta} points since your first check. Let's look at why.`}</p>
           </Card>
         </div>
       </div>
