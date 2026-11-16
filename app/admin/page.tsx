@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { isAdmin, adminClient } from "@/lib/session";
 import { Card, PageHeader, StatCard } from "@/components/ui";
+import BillingRunner from "@/components/BillingRunner";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Insights" };
@@ -44,6 +45,7 @@ export default async function Admin() {
         <Card><h2 className="font-bold">What situations are people in?</h2><ul className="mt-3 space-y-2">{bar(flags).map(([k, v]) => <li key={k} className="flex justify-between text-sm"><span>{k.replace(/([A-Z])/g, " $1").toLowerCase()}</span><span className="font-bold">{v}</span></li>)}{!Object.keys(flags).length && <li className="text-sm text-navy-500">No data yet.</li>}</ul></Card>
         <Card><h2 className="font-bold">What help do they need?</h2><ul className="mt-3 space-y-2">{bar(helpCats).map(([k, v]) => <li key={k} className="flex justify-between text-sm"><span className="capitalize">{k.replace("_", " ")}</span><span className="font-bold">{v}</span></li>)}{!Object.keys(helpCats).length && <li className="text-sm text-navy-500">Appears when Premium users generate referral briefs.</li>}</ul></Card>
       </div>
+      <BillingRunner />
     </div>
   );
 }

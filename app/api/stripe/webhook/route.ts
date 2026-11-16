@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { stripe, grantSubscription, type PaidTier } from "@/lib/payments";
 import { adminClient } from "@/lib/supabase/server";
+import { markStripeSub } from "@/lib/billing";
 import { track } from "@/lib/events";
 
 /** Stripe webhook (only used when PAYMENTS_MODE=stripe). */
@@ -21,14 +22,20 @@ export async function POST(req: Request) {
       if (ok) await track("purchase", { userId, country: s.metadata?.country, props: { tier, amount: s.amount_total, currency: s.currency, mode: "stripe" } });
     }
   }
-  if (event.type === "invoice.paid") {
-    const inv = event.data.object as Stripe.Invoice & { subscription?: string };
+  // Renewals: Stripe charges the saved card each month and retries/emails if it fails
+  if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
+    const inv = event.data.object as Stripe.Invoice & { subscription?: string; parent?: { subscription_details?: { subscription?: string } } };
+    const subRef = inv.subscription || inv.parent?.subscription_details?.subscription;
     const end = inv.lines?.data?.[0]?.period?.end;
-    if (inv.subscription && end) await adminClient().from("subscriptions").update({ status: "active", current_period_end: new Date(end * 1000).toISOString() }).eq("provider_ref", inv.subscription);
+    if (subRef) {
+      await markStripeSub(subRef, event.type === "invoice.paid" ? "active" : "past_due", event.type === "invoice.paid" ? end : undefined);
+      const { data: sub } = await adminClient().from("subscriptions").select("id,user_id").eq("provider_ref", subRef).maybeSingle();
+      if (sub && inv.billing_reason !== "subscription_create") await adminClient().from("payments").insert({ user_id: sub.user_id, subscription_id: sub.id, amount: inv.amount_due ?? 0, currency: inv.currency, status: event.type === "invoice.paid" ? "paid" : "failed", provider: "stripe", description: "Premium Plus — monthly renewal" });
+    }
   }
   if (event.type === "customer.subscription.deleted") {
     const sub = event.data.object as Stripe.Subscription;
-    await adminClient().from("subscriptions").update({ status: "cancelled" }).eq("provider_ref", sub.id);
+    await adminClient().from("subscriptions").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("provider_ref", sub.id);
   }
   return NextResponse.json({ received: true });
 }

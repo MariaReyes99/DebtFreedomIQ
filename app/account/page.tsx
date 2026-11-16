@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { paymentsMode } from "@/lib/payments";
 import { ProfileForm, PasswordForm } from "./Forms";
+import BillingPanel from "@/components/BillingPanel";
+import { getSubs, listCards } from "@/lib/billing";
 import { Badge, Button, Card, PageHeader, cx } from "@/components/ui";
 
 export const metadata = { title: "My account" };
@@ -15,7 +17,10 @@ export default async function Account({ searchParams }: { searchParams: Promise<
   const { tab: rawTab } = await searchParams;
   const tab = TABS.some(([t]) => t === rawTab) ? rawTab! : "profile";
   const supabase = await createClient();
-  const { data: subs } = tab === "billing" ? await supabase.from("subscriptions").select("tier,status,provider,amount,currency,current_period_end,created_at").order("created_at", { ascending: false }) : { data: null };
+  const billing = tab === "billing";
+  const [subs, cards, { data: payments }] = billing
+    ? await Promise.all([getSubs(user.id), listCards(user.id).catch(() => []), supabase.from("payments").select("id,amount,currency,status,description,created_at").order("created_at", { ascending: false }).limit(24)])
+    : [[], [], { data: [] }];
   const { data: checks } = tab === "history" ? await supabase.from("financial_assessments").select("created_at,health_score,stress_score,net_worth,currency").order("created_at", { ascending: false }).limit(20) : { data: null };
 
   return (
@@ -29,23 +34,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
 
       {tab === "profile" && <Card><ProfileForm name={profile?.full_name ?? ""} email={user.email ?? ""} country={country?.code ?? null} /></Card>}
       {tab === "password" && <Card><PasswordForm /><p className="mt-4 text-sm text-navy-500">Forgot your current password? Log out and use &quot;Forgot password?&quot; on the login page.</p></Card>}
-      {tab === "billing" && (
-        <div className="space-y-4">
-          <Card>
-            <h2 className="text-lg font-bold">Your plan</h2>
-            <p className="mt-1 text-navy-600">{tier === "free" ? "You're on the free plan." : "Premium is active. Thank you!"}</p>
-            {tier === "free" && <Button href="/pricing" className="mt-4">Upgrade to Premium</Button>}
-            {paymentsMode() === "mock" && <p className="mt-3 text-xs text-navy-500">Payments are in demo mode. Card details and receipts will appear here when Stripe is connected.</p>}
-          </Card>
-          <Card>
-            <h2 className="text-lg font-bold">Payment history</h2>
-            {subs?.length ? (
-              <table className="mt-3 w-full text-left text-sm"><thead><tr className="text-navy-500"><th className="py-2">Date</th><th>Plan</th><th>Amount</th><th>Via</th></tr></thead>
-                <tbody>{subs.map(s => <tr key={s.created_at} className="border-t border-navy-100"><td className="py-2">{new Date(s.created_at).toLocaleDateString()}</td><td>{s.tier === "premium" ? "Premium (one-time)" : "Premium Plus"}</td><td>{s.currency?.toUpperCase()} {((s.amount ?? 0) / 100).toFixed(2)}</td><td className="capitalize">{s.provider}</td></tr>)}</tbody></table>
-            ) : <p className="mt-2 text-sm text-navy-500">No payments yet.</p>}
-          </Card>
-        </div>
-      )}
+      {tab === "billing" && <BillingPanel subs={subs} cards={cards} payments={payments ?? []} stripe={paymentsMode() === "stripe"} plusEnabled={process.env.PREMIUM_PLUS_ENABLED === "true"} />}
       {tab === "history" && (
         <Card>
           <h2 className="text-lg font-bold">My Financial Health checks</h2>

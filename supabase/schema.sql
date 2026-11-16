@@ -173,3 +173,38 @@ grant update (full_name, country, city) on public.profiles to authenticated;
 
 -- ── Ticked "next steps" on an assessment. Safe to run again. ──
 alter table public.financial_assessments add column if not exists completed_steps jsonb not null default '[]'::jsonb;
+
+-- ── Billing: cancellations, saved cards, recurring payments, reminders. Safe to run again. ──
+alter table public.subscriptions add column if not exists cancelled_at timestamptz;
+alter table public.subscriptions add column if not exists past_due_since timestamptz;
+alter table public.subscriptions add column if not exists last_reminder_at timestamptz;
+alter table public.subscriptions add column if not exists reminders_sent int not null default 0;
+alter table public.subscriptions drop constraint if exists subscriptions_status_check;
+alter table public.subscriptions add constraint subscriptions_status_check check (status in ('active','past_due','cancelled','expired'));
+alter table public.profiles add column if not exists stripe_customer_id text;
+
+-- Saved cards (demo mode). Only brand + last 4 digits + expiry are stored, never the full number.
+-- In Stripe mode, cards live in Stripe and this table is not used.
+create table if not exists public.payment_methods (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  provider text not null default 'mock',
+  brand text, last4 text, exp_month int, exp_year int,
+  created_at timestamptz not null default now()
+);
+-- Every charge (first payment and renewals)
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  subscription_id uuid references public.subscriptions on delete set null,
+  amount int not null, currency text, status text not null default 'paid', -- paid | failed
+  provider text not null default 'mock', description text,
+  created_at timestamptz not null default now()
+);
+alter table public.payment_methods enable row level security;
+alter table public.payments enable row level security;
+drop policy if exists "own cards read" on public.payment_methods;
+create policy "own cards read" on public.payment_methods for select using (auth.uid() = user_id);
+drop policy if exists "own payments read" on public.payments;
+create policy "own payments read" on public.payments for select using (auth.uid() = user_id);
+-- (cards and payments are written by the server only)

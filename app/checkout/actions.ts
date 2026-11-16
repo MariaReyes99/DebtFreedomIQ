@@ -42,7 +42,7 @@ export async function signUpAndPay(_: AuthState, fd: FormData): Promise<AuthStat
   }
   // Mock payment: grant immediately (no money moves)
   const amount = Math.round(priceFor(c, tier) * 100);
-  await grantSubscription({ userId: data.user.id, tier, provider: "mock", ref: `mock_${crypto.randomUUID()}`, amount, currency: c.currency, periodEnd: tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null });
+  await grantSubscription({ userId: data.user.id, tier, provider: "mock", ref: `mock_${crypto.randomUUID()}`, amount, currency: c.currency, periodEnd: tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null, saveDemoCard: true });
   await track("purchase", { userId: data.user.id, country: code, props: { tier, amount, currency: c.currency, mode: "mock", combined: true } });
 
   if (data.session) redirect(`/checkout/success?tier=${tier}&mock=1`);

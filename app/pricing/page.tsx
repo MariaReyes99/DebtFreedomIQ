@@ -47,11 +47,13 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
         </Card>
 
         <Card className="flex flex-col bg-navy-950 text-white">
-          <div className="flex items-center gap-2"><h2 className="text-xl font-bold">Premium Plus</h2><Badge tone="teal">Coming soon</Badge></div>
+          <div className="flex items-center gap-2"><h2 className="text-xl font-bold">Premium Plus</h2><Badge tone="teal">{process.env.PREMIUM_PLUS_ENABLED === "true" ? "New" : "Coming soon"}</Badge></div>
           <p className="mt-1 text-navy-200">Stay on track, month after month.</p>
           <p className="mt-4 text-4xl font-bold">{money(c, c.plusPrice, 2)}</p><p className="text-sm text-navy-300">per month · cancel anytime</p>
           <ul className="mt-6 flex-1 space-y-2.5 text-[15px] text-navy-100"><Check>Everything in Premium</Check><Check>Ongoing progress tracking</Check><Check>Monthly plan recalculation</Check><Check>Progress monitoring &amp; reminders</Check></ul>
-          <div className="mt-6"><WaitlistButton /></div>
+          <div className="mt-6">{process.env.PREMIUM_PLUS_ENABLED === "true"
+            ? (tier === "premium_plus" ? <Button href="/account?tab=billing" size="lg" full variant="secondary">Manage subscription</Button> : <Button href="/checkout?tier=premium_plus" size="lg" full variant="secondary">Subscribe — {money(c, c.plusPrice, 2)}/month</Button>)
+            : <WaitlistButton />}</div>
         </Card>
       </div>
 

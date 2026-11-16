@@ -10,6 +10,7 @@ export const getSession = cache(async () => {
   let user: { id: string; email?: string } | null = null;
   let profile: Profile | null = null;
   let tier: Tier = "free";
+  let onHold: { id: string; tier: string; amount: number | null; currency: string | null } | null = null;
   if (isConfigured()) {
     const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
@@ -17,18 +18,20 @@ export const getSession = cache(async () => {
     if (user) {
       const [{ data: p }, { data: subs }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("subscriptions").select("tier,status,current_period_end").eq("user_id", user.id).eq("status", "active"),
+        supabase.from("subscriptions").select("id,tier,status,current_period_end,amount,currency").eq("user_id", user.id).in("status", ["active", "past_due"]),
       ]);
       profile = (p as Profile) ?? null;
       const now = Date.now();
-      const active = (subs ?? []).filter(s => !s.current_period_end || new Date(s.current_period_end).getTime() > now);
+      // Premium only while a subscription is active and inside its paid period. "past_due" = on hold (no access).
+      const active = (subs ?? []).filter(s => s.status === "active" && (!s.current_period_end || new Date(s.current_period_end).getTime() > now));
       tier = active.some(s => s.tier === "premium_plus") ? "premium_plus" : active.length ? "premium" : "free";
+      onHold = (subs ?? []).find(s => s.status === "past_due") ?? null;
     }
   }
   const geo = await currentCountry(profile?.country);
   const country: Country | null = geo.code ? COUNTRIES[geo.code] : null;
   const displayName = user ? profile?.full_name || user.email?.split("@")[0] || "My account" : null;
-  return { user, profile, country, displayCountry: country ?? COUNTRIES[DEFAULT_COUNTRY], geo, tier, isPremium: tier !== "free", displayName };
+  return { user, profile, country, displayCountry: country ?? COUNTRIES[DEFAULT_COUNTRY], geo, tier, isPremium: tier !== "free", displayName, onHold };
 });
 
 export async function isAdmin() {

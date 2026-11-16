@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const amount = Math.round(priceFor(c, tier) * 100);
   const ref = `mock_${crypto.randomUUID()}`;
   const periodEnd = tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null;
-  const ok = await grantSubscription({ userId: user.id, tier, provider: "mock", ref, amount, currency: c.currency, periodEnd });
+  const ok = await grantSubscription({ userId: user.id, tier, provider: "mock", ref, amount, currency: c.currency, periodEnd, saveDemoCard: true });
   if (!ok) return NextResponse.json({ error: "Couldn't activate Premium. Is the database set up?" }, { status: 500 });
   await track("purchase", { userId: user.id, country: c.code, props: { tier, amount, currency: c.currency, mode: "mock" } });
   return NextResponse.json({ url: `/checkout/success?tier=${tier}&mock=1` });

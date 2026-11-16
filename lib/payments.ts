@@ -13,12 +13,20 @@ export const paymentsMode = () => (process.env.PAYMENTS_MODE?.trim().startsWith(
 export type PaidTier = "premium" | "premium_plus";
 export const priceFor = (c: Country, tier: PaidTier) => (tier === "premium" ? c.premiumPrice : c.plusPrice);
 
-export async function grantSubscription(o: { userId: string; tier: PaidTier; provider: "mock" | "stripe" | "waiver"; ref: string; amount: number; currency: string; periodEnd?: Date | null }) {
-  const { error } = await adminClient().from("subscriptions").insert({
+export async function grantSubscription(o: { userId: string; tier: PaidTier; provider: "mock" | "stripe" | "waiver"; ref: string; amount: number; currency: string; periodEnd?: Date | null; saveDemoCard?: boolean }) {
+  const db = adminClient();
+  const { data, error } = await db.from("subscriptions").insert({
     user_id: o.userId, tier: o.tier, status: "active", provider: o.provider, provider_ref: o.ref,
     amount: o.amount, currency: o.currency, current_period_end: o.periodEnd ? o.periodEnd.toISOString() : null,
-  });
-  return !error; // duplicate provider_ref → already granted
+  }).select("id").single();
+  if (error || !data) return false; // duplicate provider_ref → already granted
+  if (o.amount > 0) await db.from("payments").insert({ user_id: o.userId, subscription_id: data.id, amount: o.amount, currency: o.currency, status: "paid", provider: o.provider, description: o.tier === "premium" ? "Premium (one-time)" : "Premium Plus — first month" });
+  if (o.saveDemoCard) {
+    // Demo checkout uses the test card; keep it on file (brand + last 4 only) so renewals work
+    const { count } = await db.from("payment_methods").select("id", { count: "exact", head: true }).eq("user_id", o.userId);
+    if (!count) await db.from("payment_methods").insert({ user_id: o.userId, provider: "mock", brand: "visa", last4: "4242", exp_month: 12, exp_year: 2034 });
+  }
+  return true;
 }
 
 export function stripe() {
@@ -26,13 +34,13 @@ export function stripe() {
 }
 
 /** Stripe Checkout — used only when PAYMENTS_MODE=stripe. */
-export async function createStripeCheckout(o: { userId: string; email?: string; country: Country; tier: PaidTier; origin: string }) {
+export async function createStripeCheckout(o: { userId: string; email?: string; customerId?: string; country: Country; tier: PaidTier; origin: string }) {
   const amount = Math.round(priceFor(o.country, o.tier) * 100);
   const recurring = o.tier === "premium_plus";
   const session = await stripe().checkout.sessions.create({
     mode: recurring ? "subscription" : "payment",
     client_reference_id: o.userId,
-    customer_email: o.email,
+    ...(o.customerId ? { customer: o.customerId } : { customer_email: o.email }),
     metadata: { user_id: o.userId, tier: o.tier, country: o.country.code },
     line_items: [{
       quantity: 1,

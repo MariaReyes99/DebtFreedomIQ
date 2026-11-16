@@ -6,7 +6,7 @@ import UserMenu from "./UserMenu";
 import NavLinks from "./NavLinks";
 
 export default async function Header() {
-  const { user, country, displayName, isPremium } = await getSession();
+  const { user, country, displayName, isPremium, onHold } = await getSession();
   return (
     <>
       <div className="bg-navy-950 text-[13px] text-navy-100">
@@ -17,6 +17,14 @@ export default async function Header() {
           ) : <span>In danger? Call your local emergency number.</span>}
         </div>
       </div>
+      {onHold && (
+        <div className="bg-red-600 text-sm text-white" role="alert">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-center">
+            <span>⚠️ Your Premium Plus is <strong>on hold</strong>: we couldn&apos;t take your payment.</span>
+            <Link href="/account?tab=billing" className="rounded-full bg-white px-3 py-0.5 font-semibold text-red-700 hover:bg-red-50">Add card &amp; pay</Link>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-30 border-b border-navy-100 bg-white/95 backdrop-blur">
         <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
           <Link href="/" className="flex items-center gap-3" aria-label="DebtFreedomIQ home">

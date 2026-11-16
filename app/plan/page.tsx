@@ -14,7 +14,7 @@ import { Badge, Button, Card, PageHeader, PremiumGate, Disclaimer } from "@/comp
 export const metadata = { title: "My Freedom Plan" };
 
 export default async function PlanPage() {
-  const { user, country, displayCountry, isPremium } = await getSession();
+  const { user, country, displayCountry, isPremium, onHold } = await getSession();
   const latest = user ? await loadLatest(user.id) : null;
   const c = country ?? displayCountry;
   await track("premium_view", { userId: user?.id, country: c.code, props: { page: "plan", premium: isPremium } });
@@ -55,6 +55,7 @@ export default async function PlanPage() {
         {latest ? "Here's a sneak peek built from your own numbers." : "This example uses a sample family. Do your free Financial Health check to see your own."}
       </PageHeader>
 
+      {onHold && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900" role="alert"><p className="font-bold">Your Premium Plus is on hold</p><p className="mt-1 text-sm">We couldn&apos;t take your monthly payment because there&apos;s no card on file. Add a card and pay to unlock your Freedom Plan again. Your saved plan is safe.</p><Button href="/account?tab=billing" size="sm" className="mt-3">Add card &amp; pay</Button></div>}
       <Card className="mb-6 bg-gradient-to-br from-navy-900 to-navy-800 text-white">
         <Badge tone="teal">{latest ? "Based on your numbers" : "Example household"}</Badge>
         <p className="mt-3 text-2xl font-bold">{summary.headline}</p>

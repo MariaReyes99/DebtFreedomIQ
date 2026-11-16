@@ -95,3 +95,13 @@ middleware.ts              Session refresh, protected routes, anonymous id
 - Premium Plus monthly tracking and recalculation (Stripe subscriptions are already supported)
 - Bank-statement CSV import · reminders · multi-language (Filipino, Māori, Samoan)
 - Referral partnerships (mortgage brokers, advisers) only with clear disclosure and licensing checks
+
+## Billing: unsubscribe, saved cards, renewals
+
+- **My Account → Plan & billing**: see your plan, **Unsubscribe** (Premium switches off immediately), add/delete cards, payment history.
+- **Renewals (Premium Plus)**: a daily job (`/api/billing/run`, scheduled in `vercel.json`) charges the saved card and extends 30 days.
+  No card → the subscription goes **on hold** (Premium locked, red banner site-wide), a reminder email is sent, again after 3 and 7 days, and it ends after 30 days unpaid. **Pay now** restores access instantly.
+- Only Premium is suspended. The free Financial Health check and the free hardship help always stay open.
+- Stripe mode: Stripe stores cards and renews; webhooks `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted` keep the status in sync. Add `invoice.payment_failed` to your Stripe CLI `--events` list.
+- Testing: Admin page → **Run billing now** / **Test: treat every Premium Plus as due today**.
+- Run the new SQL at the bottom of `supabase/schema.sql` in the Supabase SQL editor (safe to run again).
