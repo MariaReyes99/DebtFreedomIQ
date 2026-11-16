@@ -20,7 +20,7 @@ export default async function HealthPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <Steps />
-      <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="relative mb-6 overflow-hidden rounded-3xl bg-navy-900">
           <Image src="/images/family-kitchen-table.jpg" alt="" fill priority className="object-cover opacity-40" sizes="100vw" />
           <div className="relative p-6 sm:p-10">

@@ -65,25 +65,31 @@ export async function saveAssessment(userId: string, input: AssessmentInput, met
 /** Rebuild the latest saved assessment for a user (used by Find Help, Plan, Dashboard). */
 export async function loadLatest(userId: string) {
   const supabase = await createClient();
-  const { data: a } = await supabase.from("financial_assessments").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: a } = await supabase.from("financial_assessments")
+    .select("id,created_at,country,monthly_income,savings,total_debts,situation,goals,recommendations,input,completed_steps,ai_source")
+    .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!a) return null;
-  const [{ data: debts }, { data: assets }, { data: expenses }] = await Promise.all([
-    supabase.from("debts").select("*").eq("assessment_id", a.id),
-    supabase.from("assets").select("*").eq("assessment_id", a.id),
-    supabase.from("expenses").select("*").eq("assessment_id", a.id),
-  ]);
   const rec = (a.recommendations ?? {}) as { summary?: string; recommendations?: Advice["recommendations"]; nextSteps?: string[]; incomes?: AssessmentInput["incomes"] };
-  const rows: AssessmentInput = {
-    country: a.country ?? DEFAULT_COUNTRY,
-    incomes: rec.incomes?.length ? rec.incomes : [{ id: "i1", source: "Income", amount: Number(a.monthly_income) }],
-    expenses: (expenses ?? []).map(e => ({ id: e.id, category: e.category, amount: Number(e.amount), essential: e.essential })),
-    debts: (debts ?? []).map(d => ({ id: d.id, name: d.name, type: d.type, balance: Number(d.balance), rate: Number(d.interest_rate), minPayment: Number(d.min_payment) })),
-    assets: (assets ?? []).map(x => ({ id: x.id, name: x.name, type: x.type, value: Number(x.value), ...(x.use ? { use: x.use } : {}) })),
-    savings: Number(a.savings), situation: a.situation, goals: a.goals ?? "",
-  };
   // Prefer the full saved copy; fall back to the line-item tables (older saves)
   const saved = a.input && typeof a.input === "object" ? sanitize(a.input) : null;
-  const input: AssessmentInput = saved && (saved.debts.length || saved.expenses.length || saved.incomes.length) ? saved : rows;
+  let input: AssessmentInput;
+  if (saved && (saved.debts.length || saved.expenses.length || saved.incomes.length)) {
+    input = saved;
+  } else {
+    const [{ data: debts }, { data: assets }, { data: expenses }] = await Promise.all([
+      supabase.from("debts").select("id,name,type,balance,interest_rate,min_payment").eq("assessment_id", a.id),
+      supabase.from("assets").select("id,name,type,value,use").eq("assessment_id", a.id),
+      supabase.from("expenses").select("id,category,amount,essential").eq("assessment_id", a.id),
+    ]);
+    input = {
+      country: a.country ?? DEFAULT_COUNTRY,
+      incomes: rec.incomes?.length ? rec.incomes : [{ id: "i1", source: "Income", amount: Number(a.monthly_income) }],
+      expenses: (expenses ?? []).map(e => ({ id: e.id, category: e.category, amount: Number(e.amount), essential: e.essential })),
+      debts: (debts ?? []).map(d => ({ id: d.id, name: d.name, type: d.type, balance: Number(d.balance), rate: Number(d.interest_rate), minPayment: Number(d.min_payment) })),
+      assets: (assets ?? []).map(x => ({ id: x.id, name: x.name, type: x.type, value: Number(x.value), ...(x.use ? { use: x.use } : {}) })),
+      savings: Number(a.savings), situation: a.situation, goals: a.goals ?? "",
+    };
+  }
   // Old save where the debts didn't get stored: don't pretend the person is debt-free
   const incomplete = Number(a.total_debts) > 0 && input.debts.length === 0;
   const advice: Advice = { summary: rec.summary ?? "", recommendations: rec.recommendations ?? [], nextSteps: rec.nextSteps ?? [], source: a.ai_source === "openai" ? "openai" : "rules" };

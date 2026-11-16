@@ -35,7 +35,7 @@ export default async function Dashboard() {
       { n: 3, icon: "🧭", title: "My Freedom Plan", body: "Three payoff scenarios with dates, milestones and the order to pay each debt.", href: isPremium ? "/plan" : "/pricing", cta: isPremium ? "Open my plan" : "See Premium", badge: "Premium" },
     ];
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
+      <div className="mx-auto max-w-7xl px-4 py-12">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Welcome, {displayName} 👋</h1>
           <p className="mt-2 text-navy-600">This is your home page. Once you&apos;ve done your Financial Health check, your scores, progress and next steps will show here.</p>

@@ -18,7 +18,7 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
   const waiver = process.env.HARDSHIP_WAIVER === "true";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
+    <div className="mx-auto max-w-7xl px-4 py-12">
       <PageHeader eyebrow="Pricing" title="Simple, fair pricing">Start free. Pay once for your Freedom Plan, or yearly for the Financial Simulator. Prices in {c.currency.toUpperCase()}.</PageHeader>
       {cancelled && <p className="mb-6 rounded-xl bg-amber-50 p-4 text-amber-900">Payment cancelled. You haven&apos;t been charged.</p>}
       {paymentsMode() === "mock" && <p className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800"><strong>Demo payments are on.</strong> Checkout won&apos;t take real money while the site is being tested.</p>}
