@@ -19,3 +19,18 @@ export async function currentCountry(profileCountry?: string | null): Promise<{ 
   if (ip) return { code: ip, detected, source: "ip" };
   return { code: null, detected, source: "none" };
 }
+
+export type DetectedPlace = { city: string | null; region: string | null; lat: number | null; lng: number | null };
+
+/** Approximate location from the hosting edge (Vercel). Empty on localhost. */
+export async function detectedPlace(): Promise<DetectedPlace> {
+  const h = await headers();
+  const dec = (v: string | null) => { try { return v ? decodeURIComponent(v) : null; } catch { return v; } };
+  const num = (v: string | null) => (v && !Number.isNaN(Number(v)) ? Number(v) : null);
+  return {
+    city: dec(h.get("x-vercel-ip-city")),
+    region: dec(h.get("x-vercel-ip-country-region")),
+    lat: num(h.get("x-vercel-ip-latitude")),
+    lng: num(h.get("x-vercel-ip-longitude")),
+  };
+}

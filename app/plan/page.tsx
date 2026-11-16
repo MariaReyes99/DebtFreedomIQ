@@ -2,7 +2,7 @@ import { getSession } from "@/lib/session";
 import { loadLatest } from "@/lib/assessment";
 import { scenariosFor, ruleSummary, defaultGoals } from "@/lib/plan-server";
 import { calculate } from "@/lib/finance";
-import { EXAMPLE_HOUSEHOLD } from "@/lib/mock-data";
+import { exampleFor } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/server";
 import { money, toCountryCode, DEFAULT_COUNTRY, COUNTRIES } from "@/lib/countries";
 import { fmtMonths } from "@/lib/plan";
@@ -39,7 +39,7 @@ export default async function PlanPage() {
   }
 
   // Everyone else → preview (their own numbers if they have a check, otherwise the example household)
-  const input = latest?.input ?? { ...EXAMPLE_HOUSEHOLD, country: c.code };
+  const input = latest?.input ?? exampleFor(c.code);
   const m = latest?.metrics ?? calculate(input);
   const cc = toCountryCode(input.country) ?? DEFAULT_COUNTRY;
   const scenarios = scenariosFor(input, m, "avalanche");

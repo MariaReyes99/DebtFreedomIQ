@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import type { Advice, AssessmentInput, DebtType, AssetType, HelpCategory, Metrics } from "@/lib/types";
 import { COUNTRIES, money as fmtMoney, type CountryCode } from "@/lib/countries";
 import { calculate, dataWarnings } from "@/lib/finance";
-import { EXAMPLE_HOUSEHOLD, EMPTY_HOUSEHOLD } from "@/lib/mock-data";
+import { exampleFor, EMPTY_HOUSEHOLD } from "@/lib/mock-data";
 import { setCountry } from "@/app/actions";
 import CountrySearch from "./CountrySearch";
 import HealthResults from "./HealthResults";
@@ -102,7 +102,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
           <div className="border-b border-navy-100 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-navy-600">📍 Amounts in <strong>{c.currency.toUpperCase()}</strong> per <strong>month</strong> for {c.name}</p>
-              <button type="button" onClick={() => { setData({ ...EXAMPLE_HOUSEHOLD, country: c.code }); setStep(4); }} className="text-sm font-semibold text-teal-700 hover:underline">Try with example data</button>
+              <button type="button" onClick={() => { setData(exampleFor(c.code)); setStep(4); }} className="text-sm font-semibold text-teal-700 hover:underline">Try with example data</button>
             </div>
             <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="Progress">
               {STEPS.map((s, i) => (
@@ -188,7 +188,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                   {SITUATION.map(([k, l]) => <label key={k} className="flex items-start gap-3 rounded-lg p-2 font-normal text-navy-700 hover:bg-navy-50"><input type="checkbox" checked={data.situation[k]} onChange={e => setData(d => ({ ...d, situation: { ...d.situation, [k]: e.target.checked } }))} className="mt-0.5" />{l}</label>)}
                 </div>
               </fieldset>
-              <div><label htmlFor="goals">Your goals <span className="font-normal text-navy-500">(optional)</span></label><textarea id="goals" rows={3} maxLength={600} value={data.goals} onChange={e => setData(d => ({ ...d, goals: e.target.value }))} placeholder="e.g. Clear my credit card this year, save a $5,000 buffer, pay the mortgage off faster" className="mt-1.5" /></div>
+              <div><label htmlFor="goals">Your goals <span className="font-normal text-navy-500">(optional)</span></label><textarea id="goals" rows={3} maxLength={600} value={data.goals} onChange={e => setData(d => ({ ...d, goals: e.target.value }))} placeholder={`e.g. Clear my credit card this year, save a ${fmtMoney(c, c.code === "PH" ? 100000 : 5000)} buffer, pay the mortgage off faster`} className="mt-1.5" /></div>
               <div className="grid grid-cols-2 gap-2 rounded-xl bg-navy-50 p-4 text-sm sm:grid-cols-4">
                 <div><p className="text-navy-500">Income</p><p className="font-bold">{sym}{totals.income.toLocaleString()}/mo</p></div>
                 <div><p className="text-navy-500">Living costs</p><p className="font-bold">{sym}{totals.expenses.toLocaleString()}/mo</p></div>

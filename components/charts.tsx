@@ -9,7 +9,7 @@ const short = (sym: string) => (v: number) => {
   const s = a >= 1e6 ? `${(a / 1e6).toFixed(1)}m` : a >= 1e3 ? `${Math.round(a / 1e3)}k` : `${Math.round(a)}`;
   return `${v < 0 ? "-" : ""}${sym}${s}`;
 };
-const full = (sym: string) => (v: unknown) => `${sym}${Math.round(Number(v)).toLocaleString()}`;
+const full = (sym: string) => (v: unknown) => { const n = Math.round(Number(v)); return `${n < 0 ? "-" : ""}${sym}${Math.abs(n).toLocaleString("en")}`; };
 
 /** Visually hidden data table so screen-reader users get the numbers. */
 function SrTable({ caption, rows }: { caption: string; rows: [string, string][] }) {
@@ -28,8 +28,7 @@ export function ExpenseDonut({ data, symbol }: { data: { name: string; value: nu
       <div className="relative h-56" aria-hidden>
         <ResponsiveContainer>
           <PieChart>
-            <Pie data={d} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="90%" paddingAngle={2} isAnimationActive={false}
-              label={({ percent }: { percent?: number }) => ((percent ?? 0) >= 0.07 ? `${Math.round((percent ?? 0) * 100)}%` : "")} labelLine={false}>
+            <Pie data={d} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="90%" paddingAngle={2} isAnimationActive={false}>
               {d.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
             </Pie>
             <Tooltip formatter={full(symbol)} />

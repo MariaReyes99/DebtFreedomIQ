@@ -87,3 +87,17 @@ export const ACCOUNTANT_BODIES: Record<string, { name: string; url: string }> = 
   US: { name: "IRS VITA – free tax help for lower incomes", url: "https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers" },
   PH: { name: "PICPA – Philippine Institute of CPAs", url: "https://www.picpa.com.ph" },
 };
+
+/** What to search for locally, per country — uses the term people there actually use. */
+export const LOCAL_SEARCH: Record<string, Record<HelpCategory, string>> = {
+  NZ: { budget_adviser: "financial mentor budgeting service", debt_coach: "budgeting service debt help", mortgage_adviser: "mortgage adviser", financial_adviser: "financial adviser", accountant: "chartered accountant", lawyer: "community law centre" },
+  AU: { budget_adviser: "financial counselling service", debt_coach: "financial counsellor", mortgage_adviser: "mortgage broker", financial_adviser: "financial adviser", accountant: "accountant tax agent", lawyer: "community legal centre" },
+  GB: { budget_adviser: "Citizens Advice", debt_coach: "free debt advice centre", mortgage_adviser: "mortgage adviser", financial_adviser: "independent financial adviser", accountant: "chartered accountant", lawyer: "law centre legal advice" },
+  US: { budget_adviser: "nonprofit credit counseling", debt_coach: "nonprofit credit counseling agency", mortgage_adviser: "HUD approved housing counseling agency", financial_adviser: "fee-only financial planner", accountant: "CPA accountant", lawyer: "legal aid office" },
+  PH: { budget_adviser: "DSWD field office", debt_coach: "credit counseling financial literacy", mortgage_adviser: "Pag-IBIG Fund branch", financial_adviser: "licensed financial adviser", accountant: "CPA accounting firm", lawyer: "Public Attorney's Office" },
+};
+
+export function mapsSearchUrl(query: string, area?: string | null, country?: string) {
+  const q = [query, area ? `near ${area}` : null, country].filter(Boolean).join(" ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}

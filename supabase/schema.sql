@@ -163,3 +163,10 @@ end $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users
 for each row execute function public.handle_new_user();
+
+-- ── Local area (for "near you" help). Safe to run again. ──
+alter table public.profiles add column if not exists city text;
+alter table public.profiles add column if not exists region text;
+alter table public.profiles add column if not exists latitude numeric;
+alter table public.profiles add column if not exists longitude numeric;
+grant update (full_name, country, city) on public.profiles to authenticated;

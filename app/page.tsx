@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { calculate } from "@/lib/finance";
-import { EXAMPLE_HOUSEHOLD } from "@/lib/mock-data";
+import { exampleFor } from "@/lib/mock-data";
 import { money } from "@/lib/countries";
 import { track } from "@/lib/events";
 import Steps from "@/components/Steps";
@@ -19,7 +19,7 @@ export default async function Home() {
   const { user, country, displayCountry, geo } = await getSession();
   const c = country ?? displayCountry;
   await track("landing_view", { userId: user?.id, country: country?.code ?? geo.detected });
-  const demo = calculate({ ...EXAMPLE_HOUSEHOLD, country: c.code });
+  const demo = calculate(exampleFor(c.code));
 
   return (
     <>
@@ -74,7 +74,7 @@ export default async function Home() {
       <section className="bg-white py-16">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="text-3xl font-bold tracking-tight">Built for real households</h2>
-          <p className="mt-2 max-w-2xl text-navy-600">Whether you have $0 net worth and a credit card balance, or a property portfolio with cash-flow pressure, you&apos;re asking the same question.</p>
+          <p className="mt-2 max-w-2xl text-navy-600">Whether you have {money(c, 0)} net worth and a credit card balance, or a property portfolio with cash-flow pressure, you&apos;re asking the same question.</p>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {AUDIENCES.map(a => (
               <article key={a.t} className="overflow-hidden rounded-2xl border border-navy-100 bg-navy-50">

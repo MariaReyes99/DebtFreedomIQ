@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, adminClient, isConfigured } from "@/lib/supabase/server";
-import { detectedCountryRaw } from "@/lib/geo";
+import { detectedCountryRaw, detectedPlace } from "@/lib/geo";
 import { toCountryCode } from "@/lib/countries";
 import { track } from "@/lib/events";
 
@@ -44,8 +44,11 @@ export async function signIn(_: AuthState, fd: FormData): Promise<AuthState> {
   const ipCountry = await detectedCountryRaw();
   try {
     const admin = adminClient();
-    const { data: p } = await admin.from("profiles").select("country").eq("id", data.user.id).maybeSingle();
+    const { data: p } = await admin.from("profiles").select("country,city").eq("id", data.user.id).maybeSingle();
     const update: Record<string, unknown> = { last_login_country: ipCountry, last_login_at: new Date().toISOString() };
+    // Remember the area they logged in from (used for "help near you") unless they've set their own town
+    const place = await detectedPlace();
+    if (!p?.city && place.city) Object.assign(update, { city: place.city, region: place.region, latitude: place.lat, longitude: place.lng });
     // first login with no country chosen yet: use the login location if supported
     if (!p?.country && toCountryCode(ipCountry)) update.country = toCountryCode(ipCountry);
     await admin.from("profiles").upsert({ id: data.user.id, email: data.user.email, ...update });

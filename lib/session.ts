@@ -4,7 +4,7 @@ import { currentCountry } from "./geo";
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "./countries";
 
 export type Tier = "free" | "premium" | "premium_plus";
-export type Profile = { id: string; email: string | null; full_name: string | null; country: string | null };
+export type Profile = { id: string; email: string | null; full_name: string | null; country: string | null; city?: string | null; region?: string | null; latitude?: number | null; longitude?: number | null };
 
 export const getSession = cache(async () => {
   let user: { id: string; email?: string } | null = null;
@@ -16,7 +16,7 @@ export const getSession = cache(async () => {
     user = data.user ? { id: data.user.id, email: data.user.email } : null;
     if (user) {
       const [{ data: p }, { data: subs }] = await Promise.all([
-        supabase.from("profiles").select("id,email,full_name,country").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
         supabase.from("subscriptions").select("tier,status,current_period_end").eq("user_id", user.id).eq("status", "active"),
       ]);
       profile = (p as Profile) ?? null;

@@ -31,7 +31,7 @@ export const EXAMPLE_HOUSEHOLD: AssessmentInput = {
   ],
   savings: 3500,
   situation: { behindOnBills: false, collectionsOrCourt: false, cantAffordFood: false, housingAtRisk: false, medicalDebt: false, distressed: false },
-  goals: "Pay off the credit card and car loan, build a $10k emergency fund, and pay the mortgage off faster.",
+  goals: "Pay off the credit card and car loan, build a 3-month emergency fund, and pay the mortgage off faster.",
 };
 
 export const EMPTY_HOUSEHOLD = (country: string): AssessmentInput => ({
@@ -50,3 +50,28 @@ export const EMPTY_HOUSEHOLD = (country: string): AssessmentInput => ({
   situation: { behindOnBills: false, collectionsOrCourt: false, cantAffordFood: false, housingAtRisk: false, medicalDebt: false, distressed: false },
   goals: "",
 });
+
+/** Approximate value of NZ$1 in each currency, so example amounts look realistic locally. */
+const NZD_TO: Record<string, number> = { NZ: 1, AU: 0.92, US: 0.6, GB: 0.47, PH: 34 };
+const nice = (v: number) => { if (v === 0) return 0; const step = v >= 100000 ? 1000 : v >= 10000 ? 500 : v >= 1000 ? 50 : 10; return Math.round(v / step) * step; };
+
+/** The example household in the person's own currency (and local names). */
+export function exampleFor(country: string): AssessmentInput {
+  const f = NZD_TO[country] ?? 1;
+  const e = EXAMPLE_HOUSEHOLD;
+  const local: Record<string, Record<string, string>> = {
+    AU: { "Working for Families": "Family Tax Benefit", "KiwiSaver (both)": "Superannuation (both)" },
+    GB: { "Working for Families": "Child Benefit", "KiwiSaver (both)": "Workplace pensions (both)", "Afterpay / BNPL": "Klarna / BNPL" },
+    US: { "Working for Families": "Child Tax Credit", "KiwiSaver (both)": "401(k) (both)" },
+    PH: { "Working for Families": "4Ps / family support", "KiwiSaver (both)": "SSS / Pag-IBIG savings (both)", "Afterpay / BNPL": "Home Credit / BNPL" },
+  };
+  const rename = (s: string) => local[country]?.[s] ?? s;
+  return {
+    ...e, country,
+    incomes: e.incomes.map(x => ({ ...x, source: rename(x.source), amount: nice(x.amount * f) })),
+    expenses: e.expenses.map(x => ({ ...x, amount: nice(x.amount * f) })),
+    debts: e.debts.map(x => ({ ...x, name: rename(x.name), balance: nice(x.balance * f), minPayment: nice(x.minPayment * f) })),
+    assets: e.assets.map(x => ({ ...x, name: rename(x.name), value: nice(x.value * f) })),
+    savings: nice(e.savings * f),
+  };
+}

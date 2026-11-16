@@ -1,7 +1,11 @@
 import Image from "next/image";
 import { getSession } from "@/lib/session";
 import { loadLatest, fmtFor } from "@/lib/assessment";
-import { HELP_CATEGORIES, matchHelp, fallbackBrief, CREDITOR_TEMPLATE, ACCOUNTANT_BODIES } from "@/lib/help";
+import { HELP_CATEGORIES, matchHelp, fallbackBrief, CREDITOR_TEMPLATE, ACCOUNTANT_BODIES, LOCAL_SEARCH, mapsSearchUrl } from "@/lib/help";
+import { getArea } from "@/lib/area";
+import { placesEnabled } from "@/lib/places";
+import LocalHelp from "@/components/LocalHelp";
+import AreaForm from "@/components/AreaForm";
 import { COUNTRIES, DEFAULT_COUNTRY, money, toCountryCode, type Resource } from "@/lib/countries";
 import { track } from "@/lib/events";
 import type { HelpCategory } from "@/lib/types";
@@ -33,10 +37,21 @@ export default async function HelpPage() {
   const c = COUNTRIES[toCountryCode(latest?.input.country) ?? country?.code ?? DEFAULT_COUNTRY] ?? displayCountry;
   await track("help_view", { userId: user?.id, country: c.code, props: { premium: isPremium } });
   const price = money(c, c.premiumPrice);
+  const area = await getArea(profile);
+  const placesOn = placesEnabled();
   const matches = latest ? matchHelp(latest.input, latest.metrics) : [];
   const fb = latest ? fallbackBrief(latest.input, latest.metrics, c, fmtFor(c), profile?.full_name) : null;
 
   const findGroups = (re: RegExp) => c.groups.filter(g => re.test(g.title));
+  const PLURAL: Record<HelpCategory, string> = { budget_adviser: "budget advisers", debt_coach: "debt help services", mortgage_adviser: "mortgage advisers", financial_adviser: "financial advisers", accountant: "accountants", lawyer: "legal aid & lawyers" };
+  const firstWithPhone = (re: RegExp, skip?: string) => { const items = findGroups(re).flatMap(g => g.items).filter(r => r.name !== skip); return items.find(r => r.phone || r.email) ?? items.find(r => r.url); };
+  const contactFor = (k: HelpCategory): { name: string; phone?: string; email?: string; url?: string; note?: string } | null => {
+    if (k === "budget_adviser") return c.firstCall;
+    if (k === "debt_coach") return firstWithPhone(/not-for-profit|Money & debt/, c.firstCall.name) ?? null;
+    if (k === "lawyer") return firstWithPhone(/Legal|Complaints|Debt restructuring/) ?? null;
+    if (k === "accountant") return { ...ACCOUNTANT_BODIES[c.code], note: "Find a qualified accountant" };
+    return { name: c.adviserRegister.name, url: c.adviserRegister.url, note: "Check they're licensed" };
+  };
   const whereToFind: Record<HelpCategory, Resource[]> = {
     budget_adviser: [c.firstCall, ...findGroups(/Money & debt help/).flatMap(g => g.items)].slice(0, 3),
     debt_coach: findGroups(/Money & debt help|not-for-profit/).flatMap(g => g.items).slice(0, 4),
@@ -52,7 +67,10 @@ export default async function HelpPage() {
 
       {/* Free: categories */}
       <section aria-labelledby="cats">
-        <h2 id="cats" className="mb-3 text-xl font-bold">Types of help</h2>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h2 id="cats" className="text-xl font-bold">Types of help near you</h2>
+          <AreaForm city={area.city} source={area.source} />
+        </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(Object.keys(HELP_CATEGORIES) as HelpCategory[]).map(k => {
             const h = HELP_CATEGORIES[k];
@@ -64,6 +82,8 @@ export default async function HelpPage() {
                 <p className="mt-1 text-sm text-navy-700">{h.what}</p>
                 <p className="mt-2 text-sm"><span className="font-semibold">When:</span> <span className="text-navy-600">{h.when}</span></p>
                 <p className="mt-1 text-sm"><span className="font-semibold">Cost:</span> <span className="text-navy-600">{h.cost}</span></p>
+                <LocalHelp category={k} label={PLURAL[k]} area={area.city} placesOn={placesOn} contact={contactFor(k)}
+                  mapsUrl={mapsSearchUrl(LOCAL_SEARCH[c.code][k], area.city, c.name)} />
               </Card>
             );
           })}
