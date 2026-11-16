@@ -1,4 +1,5 @@
 "use server";
+import { friendly } from "@/lib/auth-errors";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, adminClient, isConfigured } from "@/lib/supabase/server";
@@ -6,7 +7,8 @@ import { detectedCountryRaw, detectedPlace } from "@/lib/geo";
 import { toCountryCode } from "@/lib/countries";
 import { track } from "@/lib/events";
 
-export type AuthState = { error?: string; message?: string };
+export type AuthState = { error?: string; message?: string; email?: string; unconfirmed?: boolean };
+
 const site = () => process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const safeNext = (n: unknown, d = "/dashboard") => (typeof n === "string" && n.startsWith("/") && !n.startsWith("//") ? n : d);
 
@@ -26,11 +28,11 @@ export async function signUp(_: AuthState, fd: FormData): Promise<AuthState> {
     email, password,
     options: { data: { full_name, country, signup_country: ipCountry }, emailRedirectTo: `${site()}/auth/callback?next=${encodeURIComponent(safeNext(fd.get("next"), "/health"))}` },
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendly(error) };
   (await cookies()).set("country", country, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   await track("signup", { userId: data.user?.id, country, props: { ip_country: ipCountry } });
   if (data.session) redirect(safeNext(fd.get("next"), "/health"));
-  return { message: "Check your email and click the link to confirm your account. Your Financial Health results will be saved when you come back." };
+  return { email, message: "Check your email and click the link to confirm your account. Your Financial Health results will be saved when you come back." };
 }
 
 export async function signIn(_: AuthState, fd: FormData): Promise<AuthState> {
@@ -39,7 +41,10 @@ export async function signIn(_: AuthState, fd: FormData): Promise<AuthState> {
   const password = String(fd.get("password") || "");
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "That email and password didn't match. Try again or reset your password." };
+  if (error) {
+    if (/not confirmed/i.test(error.message) || error.code === "email_not_confirmed") return { email, unconfirmed: true, error: "Please confirm your email first. We sent you a link when you signed up." };
+    return { error: "That email and password didn't match. Try again or reset your password." };
+  }
 
   const ipCountry = await detectedCountryRaw();
   try {
@@ -66,4 +71,15 @@ export async function resetPassword(_: AuthState, fd: FormData): Promise<AuthSta
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${site()}/auth/callback?next=/reset-password` });
   return { message: "If that email has an account, a reset link is on its way." };
+}
+
+/** Resend the sign-up confirmation email. */
+export async function resendConfirmation(_: AuthState, fd: FormData): Promise<AuthState> {
+  if (!isConfigured()) return { error: "Supabase isn't configured yet." };
+  const email = String(fd.get("email") || "").trim();
+  if (!email) return { error: "Enter your email address." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${site()}/auth/callback?next=${encodeURIComponent(safeNext(fd.get("next"), "/health"))}` } });
+  if (error) return { email, error: friendly(error) };
+  return { email, message: `We've sent a new link to ${email}. It can take a few minutes. Check your spam or junk folder too.` };
 }

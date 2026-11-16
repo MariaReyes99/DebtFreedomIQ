@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_PUBLIC_KEY } from "@/lib/env";
 
-const PROTECTED = ["/dashboard", "/account", "/admin", "/checkout"];
+const PROTECTED = ["/dashboard", "/account", "/admin"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (!user && PROTECTED.some(p => path.startsWith(p))) {
     const url = request.nextUrl.clone();
-    url.pathname = path.startsWith("/checkout") ? "/signup" : "/login";
+    url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return setAnon(NextResponse.redirect(url));
   }

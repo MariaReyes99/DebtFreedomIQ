@@ -40,8 +40,8 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
           <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check><strong>My Freedom Plan</strong> with 3 AI scenarios</Check><Check>Debt-free timeline &amp; monthly milestones</Check><Check>Payoff order &amp; savings targets</Check><Check>Goals tracker + &quot;what if&quot; questions</Check><Check>Find Help matching &amp; referral brief</Check><Check>Contact &amp; hardship letter templates</Check><Check>PDF export</Check></ul>
           <div className="mt-6">
             {tier !== "free" ? <Button href="/plan" size="lg" full>Open My Freedom Plan</Button>
-              : <Button href={user ? "/checkout?tier=premium" : `/signup?next=${encodeURIComponent("/checkout?tier=premium")}`} size="lg" full>{`Get Premium — ${money(c, c.premiumPrice)}`}</Button>}
-            {tier === "free" && !user && <p className="mt-2 text-center text-xs text-navy-500">You&apos;ll create an account first, then pay.</p>}
+              : <Button href="/checkout?tier=premium" size="lg" full>{`Get Premium — ${money(c, c.premiumPrice)}`}</Button>}
+            {tier === "free" && !user && <p className="mt-2 text-center text-xs text-navy-500">Create your account and pay in one step.</p>}
             {waiver && tier === "free" && user && <div className="mt-3 text-center"><p className="text-xs text-navy-500">Can&apos;t afford it right now?</p><CheckoutButton endpoint="/api/waiver" label="Get it free" variant="ghost" /></div>}
           </div>
         </Card>

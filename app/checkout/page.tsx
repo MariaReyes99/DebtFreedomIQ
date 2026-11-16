@@ -8,16 +8,17 @@ import { Badge, Card } from "@/components/ui";
 
 export const metadata = { title: "Checkout" };
 
+import SignupAndPay from "@/components/SignupAndPay";
+
 export default async function Checkout({ searchParams }: { searchParams: Promise<{ tier?: string }> }) {
-  const { user, country, displayCountry, tier: current } = await getSession();
+  const { user, country, displayCountry, tier: current, geo } = await getSession();
   const { tier: raw } = await searchParams;
-  if (!user) redirect(`/signup?next=${encodeURIComponent(`/checkout?tier=${raw === "premium_plus" ? "premium_plus" : "premium"}`)}`);
   const tier = raw === "premium_plus" ? "premium_plus" : "premium";
   if (tier === "premium" && current !== "free") redirect("/plan");
   const c = country ?? displayCountry;
   const price = tier === "premium" ? money(c, c.premiumPrice) : `${money(c, c.plusPrice, 2)}/month`;
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 px-4 py-12 md:grid-cols-2">
+    <div className="mx-auto grid max-w-5xl items-start gap-6 px-4 py-12 md:grid-cols-[1fr_1.2fr]">
       <Card>
         <Badge tone="teal">Order summary</Badge>
         <h1 className="mt-3 text-2xl font-bold">{tier === "premium" ? "DebtFreedomIQ Premium" : "Premium Plus"}</h1>
@@ -27,8 +28,10 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
         <p className="mt-1 text-right text-xs text-navy-500">{c.currency.toUpperCase()}, incl. any applicable taxes</p>
       </Card>
       <Card>
-        <h2 className="mb-4 text-lg font-bold">Payment</h2>
-        {paymentsMode() === "mock" ? <MockPaymentForm tier={tier} label={`Pay ${price}`} /> : <CheckoutButton tier={tier} label={`Continue to secure payment — ${price}`} />}
+        {!user ? <SignupAndPay tier={tier} price={price} country={geo.code} mock={paymentsMode() === "mock"} /> : (<>
+          <h2 className="mb-4 text-lg font-bold">Payment</h2>
+          {paymentsMode() === "mock" ? <MockPaymentForm tier={tier} label={`Pay ${price}`} /> : <CheckoutButton tier={tier} label={`Continue to secure payment — ${price}`} />}
+        </>)}
       </Card>
     </div>
   );
