@@ -12,7 +12,7 @@ import NextSteps from "@/components/NextSteps";
 import PendingCheckSaver from "@/components/PendingCheckSaver";
 import { Badge, Button, Card, PageHeader, ScoreRing, StatCard } from "@/components/ui";
 
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Home" };
 
 export default async function Dashboard() {
   const { user, displayName, isPremium, country, displayCountry } = await getSession();
@@ -37,7 +37,7 @@ export default async function Dashboard() {
       <div className="mx-auto max-w-5xl px-4 py-12">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Welcome, {displayName} 👋</h1>
-          <p className="mt-2 text-navy-600">This is your dashboard. Once you&apos;ve done your Financial Health check, your scores, progress and next steps will show here.</p>
+          <p className="mt-2 text-navy-600">This is your home page. Once you&apos;ve done your Financial Health check, your scores, progress and next steps will show here.</p>
           <p className="mt-3"><Badge tone={isPremium ? "teal" : "gray"}>{plan} plan</Badge> <Badge tone="gray">📍 {c.name}</Badge></p>
         </div>
         <PendingCheckSaver />
@@ -68,7 +68,7 @@ export default async function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
-      <PageHeader eyebrow="Dashboard" title={`Hi ${displayName} 👋`} actions={<><Button href="/health" variant="secondary">↻ Update my numbers</Button><Button href={isPremium ? "/plan" : "/pricing"}>{isPremium ? "My Freedom Plan" : "Unlock Premium"}</Button></>}>
+      <PageHeader eyebrow="Home" title={`Hi ${displayName} 👋`} actions={<><Button href="/health" variant="secondary">↻ Update my numbers</Button><Button href={isPremium ? "/plan" : "/pricing"}>{isPremium ? "My Freedom Plan" : "Unlock Premium"}</Button></>}>
         Last check: {new Date(latest.createdAt).toLocaleDateString()} {isPremium ? <Badge tone="teal" className="ml-2">Premium</Badge> : <Badge tone="gray" className="ml-2">Free plan</Badge>}
       </PageHeader>
 

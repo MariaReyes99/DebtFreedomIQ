@@ -7,7 +7,7 @@ export default function NavLinks({ loggedIn }: { loggedIn: boolean }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const items = [
-    ...(loggedIn ? [{ href: "/dashboard", label: "Dashboard" }] : []),
+    ...(loggedIn ? [{ href: "/dashboard", label: "Home" }] : []),
     { href: "/health", label: "Financial Health", badge: "Free" },
     { href: "/help", label: "Find Help" },
     { href: "/plan", label: "My Freedom Plan" },
