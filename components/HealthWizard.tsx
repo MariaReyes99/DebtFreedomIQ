@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Advice, AssessmentInput, DebtType, AssetType, HelpCategory, Metrics } from "@/lib/types";
 import { COUNTRIES, money as fmtMoney, type CountryCode } from "@/lib/countries";
 import { calculate, dataWarnings } from "@/lib/finance";
@@ -28,6 +29,7 @@ const num = (v: string) => Math.max(0, Number(v.replace(/[^\d.]/g, "")) || 0);
 export default function HealthWizard({ countryCode, detected, loggedIn, isPremium, initial }: {
   countryCode: CountryCode | null; detected: string | null; loggedIn: boolean; isPremium: boolean; initial?: AssessmentInput | null;
 }) {
+  const router = useRouter();
   const [code, setCode] = useState<CountryCode | null>(countryCode);
   const [data, setData] = useState<AssessmentInput>(() => initial ?? EMPTY_HOUSEHOLD(countryCode ?? "NZ"));
   const [step, setStep] = useState(0);
@@ -36,6 +38,14 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
   const [pending, start] = useTransition();
   const c = code ? COUNTRIES[code] : null;
   const sym = c?.symbol ?? "$";
+
+  /** Change country: updates currency here and the country shown in the header (via the server action). */
+  const changeCountry = (cc: CountryCode) => {
+    if (cc === code) return;
+    setCode(cc);
+    setData(d => ({ ...d, country: cc }));
+    start(async () => { await setCountry(cc); router.refresh(); });
+  };
 
   const submit = (input: AssessmentInput) => start(async () => {
     setError("");
@@ -94,14 +104,17 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
         <div className="p-6">
           <h2 className="text-xl font-bold">Where do you live?</h2>
           <p className="mb-4 mt-1 text-sm text-navy-600">{detected ? `You appear to be in ${detected}, which we don't cover yet. Choose the closest country.` : "We'll use this for your currency and local help. You only do this once."}</p>
-          <CountrySearch label="Country" onSelect={cc => { setCode(cc); setData(d => ({ ...d, country: cc })); start(() => setCountry(cc)); }} />
+          <CountrySearch label="Country" onSelect={changeCountry} />
         </div>
       ) : (
         <>
           {/* Progress */}
           <div className="border-b border-navy-100 p-4 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-navy-600">📍 Amounts in <strong>{c.currency.toUpperCase()}</strong> per <strong>month</strong> for {c.name}</p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="w-64"><CountrySearch key={c.code} label="Country you live in" value={c.code} onSelect={changeCountry} /></div>
+                <p className="mb-4 text-sm text-navy-600">Amounts in <strong>{c.currency.toUpperCase()}</strong> per <strong>month</strong></p>
+              </div>
               <button type="button" onClick={() => { setData(exampleFor(c.code)); setStep(4); }} className="text-sm font-semibold text-teal-700 hover:underline">Try with example data</button>
             </div>
             <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="Progress">
