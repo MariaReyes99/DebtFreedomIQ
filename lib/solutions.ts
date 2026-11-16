@@ -107,6 +107,52 @@ export function buildSolutions(i: AssessmentInput, m: Metrics, c: Country, fmt: 
     }
   }
 
+  // 3b. Investments and valuables: usually easier to turn into cash than a house, so offered before any property sale
+  const invest = i.assets.filter(a => a.type === "investments" && a.value > 0);
+  const valuables = i.assets.filter(a => (a.type === "other" || a.type === "business") && a.value > 0);
+  const investTotal = invest.reduce((t, a) => t + a.value, 0);
+  const valTotal = valuables.reduce((t, a) => t + a.value, 0);
+  // Pay off the most expensive debt first: highest rate, then largest repayment
+  const targets = [...i.debts].filter(d => d.balance > 0 && d.minPayment > 0).sort((a, b) => b.rate - a.rate || b.minPayment - a.minPayment);
+  const useCash = (cash: number) => {
+    let left = cash, monthly = 0; const cleared: string[] = [];
+    for (const d of targets) {
+      if (left <= 0) break;
+      const pay = Math.min(left, d.balance);
+      monthly += d.minPayment * (pay / d.balance); left -= pay;
+      cleared.push(pay >= d.balance ? `clear ${d.name}` : `pay ${fmt(round(pay, 1000))} off ${d.name}`);
+    }
+    return { monthly: round(monthly), cleared, left: Math.max(0, left) };
+  };
+  if (investTotal > 0 && (gap > 0 || targets.some(d => d.rate >= 8))) {
+    const r = useCash(investTotal);
+    const months = gap > 0 ? investTotal / gap : null;
+    out.push({ id: "sell-investments", kind: "asset", monthly: r.monthly, oneOff: investTotal,
+      title: `Use your investments (${fmt(investTotal)}) to pay down debt: about ${fmt(r.monthly)}/month less in repayments`,
+      detail: [
+        `${invest.map(a => `${a.name} ${fmt(a.value)}`).join(", ")}.`,
+        r.cleared.length ? `Selling them could ${r.cleared.join(", then ")}${r.left > 0 ? `, leaving ${fmt(round(r.left, 1000))}` : ""}.` : "",
+        `Repayments fall in proportion if the lender recalculates them.`,
+        months !== null ? `Or keep them as a safety net: they would cover your ${fmt(gap)}/month shortfall for about ${months >= 24 ? `${Math.floor(months / 12)} years` : `${Math.round(months)} months`} while you fix it.` : "",
+        `You can sell part rather than all: try different amounts in the Simulator.`,
+      ].filter(Boolean).join(" "),
+      caution: `Check tax${c.code === "NZ" ? " (e.g. FIF rules on overseas shares)" : c.code === "AU" || c.code === "GB" || c.code === "US" ? " (capital gains tax)" : ""}, selling fees and timing; avoid selling everything after a market fall. Investments usually grow faster than a mortgage costs over the long run, so compare in the Simulator before deciding.` });
+  }
+  if (valTotal > 0 && gap > 0) {
+    const realistic = round(valTotal * 0.6, 1000); // resale is usually well below insured/retail value
+    const r = useCash(realistic);
+    out.push({ id: "sell-valuables", kind: "asset", monthly: r.monthly, oneOff: realistic,
+      title: `Sell valuables (${valuables.map(a => a.name).join(", ")}): about ${fmt(realistic)} realistic`,
+      detail: `Jewellery, collectibles and similar items usually sell for well below their insured or retail value; we've assumed about 60% (${fmt(realistic)} of ${fmt(valTotal)}). ${r.cleared.length ? `That could ${r.cleared.join(", then ")}, cutting repayments by about ${fmt(r.monthly)}/month.` : ""} Get two independent valuations first.` });
+  }
+  const car = i.assets.find(a => a.type === "vehicle" && a.value >= 20000);
+  if (car && gap > 0) {
+    const freed = round(car.value * 0.6, 1000);
+    out.push({ id: "swap-car", kind: "asset", monthly: 0, oneOff: freed,
+      title: `Swap ${car.name} (${fmt(car.value)}) for a cheaper car: frees about ${fmt(freed)}`,
+      detail: `Selling and buying a reliable car for around ${fmt(round(car.value * 0.4, 1000))} releases cash for debts or a buffer, and often lowers insurance and running costs.` });
+  }
+
   // 4. Sell a property to release equity: the rental first, never guess the family home
   if (gap > 0 && withAsset.length) {
     const sale = (p: { debt: DebtItem; asset: AssetItem }) => round(p.asset.value * 0.97 - p.debt.balance, 1000); // ~3% selling costs
