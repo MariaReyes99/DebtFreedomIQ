@@ -23,7 +23,7 @@ export function SignupForm({ defaultCountry, detected, next }: { defaultCountry?
         <p className="-mt-2 text-xs text-navy-500">{defaultCountry ? "Detected from your location." : detected ? `We detected ${detected}, which isn't covered yet. Choose the closest.` : "Type to find your country."}</p>
       </div>
       <label className="flex items-start gap-3 font-normal text-navy-700"><input type="checkbox" name="consent" required className="mt-0.5" /> I understand DebtFreedomIQ gives general information and tools, not personalised financial advice.</label>
-      <Button type="submit" size="lg" full disabled={pending}>{pending ? "Creating your account…" : "Create free account"}</Button>
+      <Button type="submit" size="lg" full disabled={pending}>{pending ? "Creating your account…" : /checkout/.test(next ?? "") ? "Create account & continue to payment" : "Create free account"}</Button>
       <p className="text-center text-sm text-navy-600">Already have an account? <Link className="font-semibold text-teal-700" href={`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Log in</Link></p>
     </form>
   );

@@ -289,3 +289,11 @@ export function money(c: Country, n: number, decimals = 0) {
 }
 
 export const DEFAULT_COUNTRY: CountryCode = "NZ";
+
+/** "1737 – Need to Talk?" + "1737" → "Need to talk? Call or text" (avoid printing the number twice) */
+export function crisisLabel(name: string, phone?: string) {
+  const rest = phone ? name.replace(phone, "").replace(/^[\s–-]+/, "").trim() : name;
+  if (phone && name.startsWith(phone)) return `${rest || "Helpline"}: call or text`;
+  return `${rest}:`;
+}
+

@@ -10,8 +10,8 @@ export const metadata = { title: "Checkout" };
 
 export default async function Checkout({ searchParams }: { searchParams: Promise<{ tier?: string }> }) {
   const { user, country, displayCountry, tier: current } = await getSession();
-  if (!user) redirect("/login?next=/checkout");
   const { tier: raw } = await searchParams;
+  if (!user) redirect(`/signup?next=${encodeURIComponent(`/checkout?tier=${raw === "premium_plus" ? "premium_plus" : "premium"}`)}`);
   const tier = raw === "premium_plus" ? "premium_plus" : "premium";
   if (tier === "premium" && current !== "free") redirect("/plan");
   const c = country ?? displayCountry;

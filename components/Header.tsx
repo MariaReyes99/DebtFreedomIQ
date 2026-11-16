@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getSession } from "@/lib/session";
+import { crisisLabel } from "@/lib/countries";
 import UserMenu from "./UserMenu";
 import NavLinks from "./NavLinks";
 
@@ -12,7 +13,7 @@ export default async function Header() {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-1.5 text-center">
           <span>Feeling overwhelmed? You&apos;re not alone.</span>
           {country ? (
-            <span>{country.crisis.name.replace(/\s+–.*$/, "")}: <a className="font-semibold text-white underline" href={`tel:${country.crisis.phone?.replace(/[^\d+]/g, "")}`}>{country.crisis.phone}</a> · Emergency: <a className="font-semibold text-white underline" href={`tel:${country.emergency}`}>{country.emergency}</a></span>
+            <span>{crisisLabel(country.crisis.name, country.crisis.phone)} <a className="font-semibold text-white underline" href={`tel:${country.crisis.phone?.replace(/[^\d+]/g, "")}`}>{country.crisis.phone}</a>{country.crisis.text && country.crisis.text !== country.crisis.phone && <> (text {country.crisis.text})</>} · Emergency: <a className="font-semibold text-white underline" href={`tel:${country.emergency}`}>{country.emergency}</a></span>
           ) : <span>In danger? Call your local emergency number.</span>}
         </div>
       </div>

@@ -31,7 +31,7 @@ export function StatCard({ label, value, sub, tone = "navy", icon }: { label: st
   return (
     <Card className="p-4 sm:p-5">
       <div className="flex items-center justify-between text-sm font-medium text-navy-500"><span>{label}</span>{icon && <span aria-hidden>{icon}</span>}</div>
-      <div className={cx("mt-1.5 text-2xl font-bold tracking-tight sm:text-[28px]", color)}>{value}</div>
+      <div className={cx("mt-1.5 whitespace-nowrap text-xl font-bold tracking-tight sm:text-2xl xl:text-[26px]", color)}>{value}</div>
       {sub && <div className="mt-1 text-xs text-navy-500">{sub}</div>}
     </Card>
   );
@@ -78,7 +78,7 @@ export function PremiumGate({ title, children, price }: { title: string; childre
           <Badge tone="navy">🔒 Premium</Badge>
           <h3 className="mt-3 text-xl font-bold text-navy-900">{title}</h3>
           <p className="mt-2 text-navy-600">Unlock with a one-time Premium report for <strong>{price}</strong>. No subscription.</p>
-          <div className="mt-4 flex justify-center gap-2"><Button href="/pricing">Unlock Premium</Button><Button href="/pricing" variant="secondary">See what&apos;s included</Button></div>
+          <div className="mt-4 flex justify-center gap-2"><Button href="/checkout?tier=premium">Unlock Premium</Button><Button href="/pricing" variant="secondary">See what&apos;s included</Button></div>
         </div>
       </div>
     </div>

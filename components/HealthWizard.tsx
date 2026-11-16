@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { Advice, AssessmentInput, DebtType, AssetType, HelpCategory, Metrics } from "@/lib/types";
-import { COUNTRIES, type CountryCode } from "@/lib/countries";
+import { COUNTRIES, money as fmtMoney, type CountryCode } from "@/lib/countries";
+import { calculate, dataWarnings } from "@/lib/finance";
 import { EXAMPLE_HOUSEHOLD, EMPTY_HOUSEHOLD } from "@/lib/mock-data";
 import { setCountry } from "@/app/actions";
 import CountrySearch from "./CountrySearch";
@@ -56,6 +57,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loggedIn]);
 
+  const warnings = useMemo(() => (c ? dataWarnings(data, calculate(data), v => fmtMoney(c, v)) : []), [data, c]);
   const totals = useMemo(() => ({
     income: data.incomes.reduce((s, x) => s + x.amount, 0),
     expenses: data.expenses.reduce((s, x) => s + x.amount, 0),
@@ -126,7 +128,11 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                   {del("incomes", i, x.source)}
                 </div>
               ))}
-              <Button variant="ghost" size="sm" onClick={() => setData(d => ({ ...d, incomes: [...d.incomes, { id: uid(), source: "", amount: 0 }] }))}>+ Add income</Button>
+              <div className="flex flex-wrap gap-2">
+                {["Rental income", "Partner's pay", "Benefits / tax credits", "Child support", "Other income"].map(src => (
+                  <Button key={src} variant="secondary" size="sm" onClick={() => setData(d => ({ ...d, incomes: [...d.incomes, { id: uid(), source: src, amount: 0 }] }))}>+ {src}</Button>
+                ))}
+              </div>
             </>)}
 
             {step === 1 && (<>
@@ -146,7 +152,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
               <p className="text-sm text-navy-600">Every debt, including your mortgage. Use your latest statement for the balance and interest rate. No debts? Skip to the next step.</p>
               {data.debts.map((x, i) => (
                 <div key={x.id} className={cx(row, "sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_100px_1fr_auto]")}>
-                  <div><label htmlFor={`dn${i}`} className="text-xs">Name</label><input id={`dn${i}`} value={x.name} placeholder="e.g. Visa card" onChange={e => upd("debts", i, { name: e.target.value })} className="mt-1" /></div>
+                  <div><label htmlFor={`dn${i}`} className="text-xs">Name</label><input id={`dn${i}`} value={x.name} placeholder="e.g. Visa card" onChange={e => { const v = e.target.value; upd("debts", i, { name: v, ...(/house|home|mortgage|property/i.test(v) && x.type === "credit_card" ? { type: "mortgage" as DebtType } : {}) }); }} className="mt-1" /></div>
                   <div><label htmlFor={`dt${i}`} className="text-xs">Type</label><select id={`dt${i}`} value={x.type} onChange={e => upd("debts", i, { type: e.target.value as DebtType })} className="mt-1">{DEBT_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
                   {money("Balance owed", x.balance, v => upd("debts", i, { balance: v }), `db${i}`)}
                   <div><label htmlFor={`dr${i}`} className="text-xs">Interest % / yr</label><input id={`dr${i}`} inputMode="decimal" value={x.rate || ""} placeholder="0" onChange={e => upd("debts", i, { rate: num(e.target.value) })} className="mt-1" /></div>
@@ -159,7 +165,8 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
 
             {step === 3 && (<>
               <div className="max-w-xs">{money("Cash savings / emergency fund", data.savings, v => setData(d => ({ ...d, savings: v })), "savings")}</div>
-              <p className="text-sm text-navy-600">Other assets: property (current value), vehicles, investments, retirement savings, business. Skip if none.</p>
+              <p className="text-sm text-navy-600">Other assets: property (today&apos;s value), vehicles, investments, retirement savings, business. Skip if none.</p>
+              {data.debts.some(d => d.type === "mortgage" && d.balance > 0) && !data.assets.some(a => a.type === "property") && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">🏠 You have a home loan. Add the property&apos;s current value below, so your net worth is correct.</p>}
               {data.assets.map((x, i) => (
                 <div key={x.id} className={cx(row, "sm:grid-cols-[1fr_1fr_180px_auto]")}>
                   <div><label htmlFor={`an${i}`} className="text-xs">Name</label><input id={`an${i}`} value={x.name} onChange={e => upd("assets", i, { name: e.target.value })} className="mt-1" /></div>
@@ -168,7 +175,11 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                   {del("assets", i, x.name)}
                 </div>
               ))}
-              <Button variant="ghost" size="sm" onClick={() => setData(d => ({ ...d, assets: [...d.assets, { id: uid(), name: "", type: "property", value: 0 }] }))}>+ Add asset</Button>
+              <div className="flex flex-wrap gap-2">
+                {([["Property", "property"], ["Vehicle", "vehicle"], ["Retirement / KiwiSaver / super", "retirement"], ["Investments", "investments"], ["Business", "business"], ["Other asset", "other"]] as [string, AssetType][]).map(([l, t]) => (
+                  <Button key={l} variant="secondary" size="sm" onClick={() => setData(d => ({ ...d, assets: [...d.assets, { id: uid(), name: l === "Property" ? (d.debts.find(x => x.type === "mortgage" && !d.assets.some(a => a.name === x.name))?.name ?? "Property") : l, type: t, value: 0 }] }))}>+ {l}</Button>
+                ))}
+              </div>
             </>)}
 
             {step === 4 && (<>
@@ -186,6 +197,15 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
               </div>
             </>)}
 
+            {step === STEPS.length - 1 && warnings.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
+                <p className="font-semibold text-amber-900">Please check your numbers</p>
+                <ul className="mt-2 space-y-2 text-sm text-amber-900">
+                  {warnings.map((w, i) => <li key={i} className="flex flex-wrap items-start justify-between gap-2"><span>⚠️ {w.message}</span><button type="button" onClick={() => setStep(w.step)} className="font-semibold underline">Fix</button></li>)}
+                </ul>
+                <p className="mt-2 text-xs text-amber-800">You can still continue. These checks help make your results accurate.</p>
+              </div>
+            )}
             {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
             <div className="flex items-center justify-between gap-2 border-t border-navy-100 pt-4">
               <Button variant="secondary" disabled={step === 0} onClick={() => setStep(s => Math.max(0, s - 1))}>← Back</Button>

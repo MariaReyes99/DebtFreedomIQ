@@ -1,6 +1,6 @@
 "use client";
 import {
-  ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend, AreaChart, Area,
+  LabelList, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend, AreaChart, Area,
 } from "recharts";
 
 const PALETTE = ["#13a796", "#1d3561", "#5fdac9", "#4a6290", "#f59e0b", "#94a7c8", "#0d6b62", "#c4d0e4", "#ef4444"];
@@ -19,24 +19,35 @@ function SrTable({ caption, rows }: { caption: string; rows: [string, string][] 
 }
 
 export function ExpenseDonut({ data, symbol }: { data: { name: string; value: number }[]; symbol: string }) {
-  const d = data.filter(x => x.value > 0);
+  const d = data.filter(x => x.value > 0).sort((a, b) => b.value - a.value);
   if (!d.length) return <p className="text-sm text-navy-500">Add your monthly spending to see the breakdown.</p>;
+  const total = d.reduce((s, x) => s + x.value, 0);
+  const pct = (v: number) => `${Math.round((v / total) * 100)}%`;
   return (
     <figure>
-      <div className="h-64" aria-hidden>
+      <div className="relative h-56" aria-hidden>
         <ResponsiveContainer>
           <PieChart>
-            <Pie data={d} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="88%" paddingAngle={2}>
+            <Pie data={d} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="90%" paddingAngle={2} isAnimationActive={false}
+              label={({ percent }: { percent?: number }) => ((percent ?? 0) >= 0.07 ? `${Math.round((percent ?? 0) * 100)}%` : "")} labelLine={false}>
               {d.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
             </Pie>
             <Tooltip formatter={full(symbol)} />
           </PieChart>
         </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xs text-navy-500">Total / month</span>
+          <span className="text-lg font-bold text-navy-900">{full(symbol)(total)}</span>
+        </div>
       </div>
-      <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-navy-600">
-        {d.map((x, i) => <li key={x.name} className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} />{x.name}</li>)}
-      </ul>
-      <SrTable caption="Monthly spending by category" rows={d.map(x => [x.name, full(symbol)(x.value)])} />
+      <table className="mt-3 w-full text-xs">
+        <tbody>{d.map((x, i) => (
+          <tr key={x.name} className="border-t border-navy-50">
+            <td className="py-1"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: PALETTE[i % PALETTE.length] }} />{x.name}</td>
+            <td className="py-1 text-right font-semibold text-navy-800">{full(symbol)(x.value)}</td>
+            <td className="w-10 py-1 text-right text-navy-500">{pct(x.value)}</td>
+          </tr>))}</tbody>
+      </table>
     </figure>
   );
 }
@@ -47,13 +58,14 @@ export function BalanceBars({ assets, debts, savings, symbol }: { assets: number
     <figure>
       <div className="h-56" aria-hidden>
         <ResponsiveContainer>
-          <BarChart data={data} margin={{ left: 8, right: 8 }}>
+          <BarChart data={data} margin={{ left: 8, right: 8, top: 22 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e3e9f3" />
             <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#4a6290" }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={short(symbol)} tick={{ fontSize: 11, fill: "#4a6290" }} axisLine={false} tickLine={false} width={56} />
             <Tooltip formatter={full(symbol)} cursor={{ fill: "#f2f5fa" }} />
-            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+            <Bar dataKey="value" radius={[8, 8, 0, 0]} isAnimationActive={false}>
               {data.map((x, i) => <Cell key={i} fill={x.name === "Debts" ? "#1d3561" : i === 0 ? "#5fdac9" : "#13a796"} />)}
+              <LabelList dataKey="value" position="top" formatter={(v: unknown) => short(symbol)(Number(v))} style={{ fontSize: 12, fontWeight: 700, fill: "#0b1b3a" }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -65,17 +77,19 @@ export function BalanceBars({ assets, debts, savings, symbol }: { assets: number
 
 export function DebtBars({ data, symbol }: { data: { name: string; balance: number; rate: number }[]; symbol: string }) {
   if (!data.length) return <p className="text-sm text-navy-500">No debts entered.</p>;
+  const rows = data.map(d => ({ ...d, label: `${short(symbol)(d.balance)} · ${d.rate}%` }));
   return (
     <figure>
-      <div style={{ height: Math.max(160, data.length * 44) }} aria-hidden>
+      <div style={{ height: Math.max(160, data.length * 48) }} aria-hidden>
         <ResponsiveContainer>
-          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
+          <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 112 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e3e9f3" />
             <XAxis type="number" tickFormatter={short(symbol)} tick={{ fontSize: 11, fill: "#4a6290" }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12, fill: "#1d3561" }} axisLine={false} tickLine={false} />
             <Tooltip formatter={full(symbol)} cursor={{ fill: "#f2f5fa" }} />
-            <Bar dataKey="balance" radius={[0, 8, 8, 0]}>
+            <Bar dataKey="balance" radius={[0, 8, 8, 0]} isAnimationActive={false}>
               {data.map((d, i) => <Cell key={i} fill={d.rate >= 15 ? "#ef4444" : d.rate >= 8 ? "#f59e0b" : "#13a796"} />)}
+              <LabelList dataKey="label" position="right" style={{ fontSize: 11, fontWeight: 700, fill: "#0b1b3a" }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>

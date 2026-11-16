@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Advice, AssessmentInput, HelpCategory, Metrics } from "@/lib/types";
-import { COUNTRIES, money, type CountryCode } from "@/lib/countries";
+import { COUNTRIES, money, crisisLabel, type CountryCode } from "@/lib/countries";
 import { HELP_CATEGORIES } from "@/lib/help";
+import { dataWarnings } from "@/lib/finance";
 import { Badge, Button, Card, ScoreRing, StatCard, Disclaimer, cx } from "./ui";
 import { ExpenseDonut, BalanceBars, DebtBars } from "./charts";
 
@@ -18,12 +19,20 @@ export default function HealthResults({ input, metrics: m, advice, help, country
   const dtiTone = m.debtToIncome <= 0.2 ? "good" : m.debtToIncome <= 0.36 ? "warn" : "bad";
   const expenseData = [...input.expenses.map(e => ({ name: e.category, value: e.amount })), { name: "Debt repayments", value: m.monthlyDebtPayments }];
 
+  const warnings = dataWarnings(input, m, f);
   return (
     <div className="space-y-6" id="results">
+      {warnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900" role="status">
+          <p className="font-bold">Some numbers may be missing or in the wrong unit, which can make your scores look worse than they are:</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{warnings.map((w, i) => <li key={i}>{w.message}</li>)}</ul>
+          <p className="mt-2 text-sm">Use <strong>Edit my answers</strong> above to fix them.</p>
+        </div>
+      )}
       {crisis && (
         <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900">
           <p className="font-bold">You don&apos;t have to handle this alone.</p>
-          <p className="mt-1 text-sm">Free, confidential support is available now. <strong>{c.firstCall.name}</strong>{c.firstCall.phone && <> on <a className="font-semibold underline" href={`tel:${c.firstCall.phone.replace(/[^\d+]/g, "")}`}>{c.firstCall.phone}</a></>} can help with money worries. If you&apos;re feeling overwhelmed, <strong>{c.crisis.name}</strong>: <a className="font-semibold underline" href={`tel:${c.crisis.phone?.replace(/[^\d+]/g, "")}`}>{c.crisis.phone}</a>. In an emergency call {c.emergency}.</p>
+          <p className="mt-1 text-sm">Free, confidential support is available now. <strong>{c.firstCall.name}</strong>{c.firstCall.phone && <> on <a className="font-semibold underline" href={`tel:${c.firstCall.phone.replace(/[^\d+]/g, "")}`}>{c.firstCall.phone}</a></>} can help with money worries. If you&apos;re feeling overwhelmed, {crisisLabel(c.crisis.name, c.crisis.phone)} <a className="font-semibold underline" href={`tel:${c.crisis.phone?.replace(/[^\d+]/g, "")}`}>{c.crisis.phone}</a>. In an emergency call {c.emergency}.</p>
         </div>
       )}
 
@@ -47,7 +56,7 @@ export default function HealthResults({ input, metrics: m, advice, help, country
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label="Net worth" icon="🏦" value={f(m.netWorth)} tone={m.netWorth >= 0 ? "good" : "bad"} sub={`${f(m.totalAssets)} assets − ${f(m.totalDebts)} debts`} />
         <StatCard label="Debt-to-income" icon="⚖️" value={pct(m.debtToIncome)} tone={dtiTone} sub="Repayments ÷ income (aim < 36%)" />
-        <StatCard label="Monthly surplus" icon="💧" value={f(m.monthlySurplus)} tone={m.monthlySurplus >= 0 ? "good" : "bad"} sub={`${pct(Math.max(-1, m.savingsRate))} of income`} />
+        <StatCard label="Monthly surplus" icon="💧" value={f(m.monthlySurplus)} tone={m.monthlySurplus >= 0 ? "good" : "bad"} sub={m.monthlyIncome > 0 ? `${m.monthlySurplus >= 0 ? "Saving" : "Shortfall of"} ${pct(Math.abs(m.savingsRate))} of income` : "No income entered"} />
         <StatCard label="Emergency fund" icon="🛟" value={`${m.emergencyMonths.toFixed(1)} mo`} tone={m.emergencyMonths >= 3 ? "good" : m.emergencyMonths >= 1 ? "warn" : "bad"} sub={`Score ${m.emergencyScore}/100 · aim for 3–6 months`} />
         <StatCard label="High-interest debt" icon="🔥" value={pct(m.highInterestShare)} tone={m.highInterestShare > 0.3 ? "bad" : m.highInterestShare > 0 ? "warn" : "good"} sub="Share of debt at 15%+" />
       </div>

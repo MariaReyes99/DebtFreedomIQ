@@ -107,3 +107,27 @@ export function ruleAdvice(i: AssessmentInput, m: Metrics, fmt: (n: number) => s
   ];
   return { summary, recommendations, nextSteps, source: "rules" };
 }
+
+export type DataWarning = { message: string; step: number }; // step = wizard step to fix it (0 income … 3 assets)
+const looksLikeProperty = (s: string) => /house|home|mortgage|property|unit|flat|apartment|rental/i.test(s);
+
+/** Sanity checks for common data-entry gaps (shown before and after calculating). */
+export function dataWarnings(i: AssessmentInput, m: Metrics, fmt: (n: number) => string): DataWarning[] {
+  const w: DataWarning[] = [];
+  const mortgages = i.debts.filter(d => d.balance > 0 && (d.type === "mortgage" || looksLikeProperty(d.name)));
+  const properties = i.assets.filter(a => a.type === "property" && a.value > 0);
+  if (m.monthlyIncome <= 0) w.push({ step: 0, message: "You haven't entered any income yet." });
+  if (mortgages.length > properties.length)
+    w.push({ step: 3, message: `You've added ${mortgages.length} home loan${mortgages.length > 1 ? "s" : ""} but ${properties.length ? `only ${properties.length} property` : "no property value"}. Add each property's value under Assets, or your net worth will look much lower than it is.` });
+  const misTyped = i.debts.filter(d => d.balance > 0 && d.type !== "mortgage" && looksLikeProperty(d.name));
+  if (misTyped.length) w.push({ step: 2, message: `${misTyped.map(d => `"${d.name}"`).join(", ")} look${misTyped.length === 1 ? "s" : ""} like a home loan. Set the type to "Mortgage / home loan".` });
+  if (mortgages.length >= 2 && !i.incomes.some(x => /rent/i.test(x.source) && x.amount > 0))
+    w.push({ step: 0, message: "You have more than one property loan. If any property is rented out, add the rent under Income." });
+  if (m.monthlyIncome > 0 && m.monthlyDebtPayments > m.monthlyIncome)
+    w.push({ step: 2, message: `Your debt repayments (${fmt(m.monthlyDebtPayments)}/month) are more than your income (${fmt(m.monthlyIncome)}/month). Check every amount is per month (not per year or fortnight), and that all income is included.` });
+  const big = i.expenses.filter(e => m.monthlyIncome > 0 && e.amount > m.monthlyIncome * 0.6);
+  if (big.length) w.push({ step: 1, message: `${big.map(e => `"${e.category}"`).join(", ")} ${big.length === 1 ? "is" : "are"} very large for one month. Is that a yearly amount? Divide yearly bills by 12.` });
+  const noMin = i.debts.filter(d => d.balance > 0 && d.minPayment === 0 && d.type !== "family");
+  if (noMin.length) w.push({ step: 2, message: `Add the monthly repayment for ${noMin.map(d => `"${d.name}"`).join(", ")}, otherwise we can't plan the payoff.` });
+  return w;
+}
