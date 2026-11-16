@@ -47,7 +47,7 @@ export async function grantSubscriptionDetailed(o: GrantOpts): Promise<{ ok: boo
     console.error("[checkout] couldn't save subscription:", error?.message);
     return { ok: false, error: error?.code === "23505" ? "This payment was already recorded." : explain(error?.message ?? "unknown") };
   }
-  if (o.amount > 0 && !o.testNoCard) await db.from("payments").insert({ user_id: o.userId, subscription_id: data.id, amount: o.amount, currency: o.currency, status: "paid", provider: o.provider, description: o.tier === "premium" ? "Premium (one-time)" : "Premium Plus — first month" });
+  if (o.amount > 0 && !o.testNoCard) await db.from("payments").insert({ user_id: o.userId, subscription_id: data.id, amount: o.amount, currency: o.currency, status: "paid", provider: o.provider, description: o.tier === "premium" ? "Premium (one-time)" : "Premium Plus — first year" });
   if (o.saveDemoCard && !o.testNoCard) {
     // Demo checkout uses the test card; keep it on file (brand + last 4 only) so renewals work
     const { count } = await db.from("payment_methods").select("id", { count: "exact", head: true }).eq("user_id", o.userId);
@@ -77,7 +77,7 @@ export async function createStripeCheckout(o: { userId: string; email?: string; 
       quantity: 1,
       price_data: {
         currency: o.country.currency, unit_amount: amount,
-        ...(recurring ? { recurring: { interval: "month" as const } } : {}),
+        ...(recurring ? { recurring: { interval: "year" as const } } : {}),
         product_data: { name: recurring ? "DebtFreedomIQ Premium Plus" : "DebtFreedomIQ Premium — Freedom Plan report" },
       },
     }],
@@ -91,3 +91,7 @@ export async function createStripeCheckout(o: { userId: string; email?: string; 
 export function testSubscribeAllowed() {
   return paymentsMode() === "mock" || process.env.ALLOW_TEST_SUBSCRIBE === "true";
 }
+
+/** Premium Plus (the Financial Simulator) is billed yearly. On unless PREMIUM_PLUS_ENABLED=false. */
+export const PLUS_DAYS = 365;
+export const plusEnabled = () => process.env.PREMIUM_PLUS_ENABLED !== "false";

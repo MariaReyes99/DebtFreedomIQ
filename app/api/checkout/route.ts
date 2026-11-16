@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { paymentsMode, grantSubscriptionDetailed, createStripeCheckout, priceFor, testSubscribeAllowed, type PaidTier } from "@/lib/payments";
+import { paymentsMode, grantSubscriptionDetailed, createStripeCheckout, priceFor, PLUS_DAYS, testSubscribeAllowed, type PaidTier } from "@/lib/payments";
 import { track } from "@/lib/events";
 
 /** POST /api/checkout { tier } → { url }. Mock mode grants access immediately. */
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   // MOCK: no money moves. Replace with Stripe by setting PAYMENTS_MODE=stripe.
   const amount = Math.round(priceFor(c, tier) * 100);
   const ref = `${noCard ? "test" : "mock"}_${crypto.randomUUID()}`;
-  const periodEnd = tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null;
+  const periodEnd = tier === "premium_plus" ? new Date(Date.now() + PLUS_DAYS * 864e5) : null;
   const g = await grantSubscriptionDetailed({ userId: user.id, tier, provider: "mock", ref, amount, currency: c.currency, periodEnd, saveDemoCard: true, testNoCard: noCard });
   if (!g.ok) return NextResponse.json({ error: `Couldn't activate Premium. ${g.error}` }, { status: 500 });
   await track("purchase", { userId: user.id, country: c.code, props: { tier, amount, currency: c.currency, mode: noCard ? "test_no_card" : "mock" } });

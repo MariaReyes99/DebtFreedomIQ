@@ -30,12 +30,20 @@ export default async function Home() {
           <div>
             <Badge tone="teal">AI-powered financial decisions</Badge>
             <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">From financial stress to <span className="text-teal-300">financial freedom.</span></h1>
-            <p className="mt-5 max-w-xl text-lg text-navy-100">Know your next best financial move. Get your free Financial Health score in about 10 minutes, then a personalised plan to become debt-free.</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button href="/health" size="lg">Get my free score</Button>
-              <Button href="/plan" size="lg" variant="secondary">See an example plan</Button>
+            <p className="mt-5 max-w-xl text-lg text-navy-100"><strong className="text-white">See the result of every move before you make it.</strong> Start with your free Financial Health check, then test your options: sell or keep, refinance, use savings, and see your debts, net worth and retirement change.</p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <Link href="/health" className="group rounded-2xl bg-teal-500 p-4 text-white shadow-lg shadow-teal-900/30 hover:bg-teal-600">
+                <p className="text-sm font-semibold text-teal-50">I&apos;m struggling with money</p>
+                <p className="mt-1 text-lg font-bold">Get my free check &amp; help →</p>
+                <p className="mt-1 text-xs text-teal-50">10 minutes · free forever · find support near you</p>
+              </Link>
+              <Link href="/whatif" className="group rounded-2xl bg-white/10 p-4 text-white ring-1 ring-white/20 hover:bg-white/15">
+                <p className="text-sm font-semibold text-navy-200">I want to plan my next move</p>
+                <p className="mt-1 text-lg font-bold">Try the Financial Simulator →</p>
+                <p className="mt-1 text-xs text-navy-200">Property, debt, savings &amp; retirement in one model</p>
+              </Link>
             </div>
-            <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-navy-200"><li>✓ Free forever</li><li>✓ No bank logins</li><li>✓ No subscription needed</li></ul>
+            <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-navy-200"><li>✓ Free check forever</li><li>✓ No bank logins</li><li>✓ You decide; we calculate</li></ul>
           </div>
           <div className="relative">
             <div className="relative aspect-[4/3] overflow-hidden rounded-3xl ring-1 ring-white/10">
@@ -53,12 +61,13 @@ export default async function Home() {
 
       {/* Three pillars */}
       <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="text-center text-3xl font-bold tracking-tight">Everything you need to answer: <span className="text-teal-600">&quot;What should I do next?&quot;</span></h2>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <h2 className="text-center text-3xl font-bold tracking-tight">Everything you need to answer: <span className="text-teal-600">&quot;What happens if I…?&quot;</span></h2>
+        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
             { tag: "Free", tone: "green" as const, t: "Financial Health", d: "Your Financial Health, Stress and Emergency Fund scores, net worth, debt-to-income ratio, charts and your top 5 recommendations.", href: "/health", cta: "Start free" },
             { tag: "Free + Premium", tone: "teal" as const, t: "Find Help", d: "See which professionals can help, from free budget advisers to mortgage advisers and lawyers. Premium adds matching and a referral brief.", href: "/help", cta: "Explore help" },
             { tag: "Premium", tone: "navy" as const, t: "My Freedom Plan", d: "Conservative, Balanced and Aggressive scenarios with your debt-free date, monthly milestones, savings targets and a PDF.", href: "/plan", cta: "See example" },
+            { tag: "Premium Plus", tone: "navy" as const, t: "Financial Simulator", d: "Sell a rental, use shares to clear a card, refinance, buy or invest. Compare scenarios side by side: cash flow, interest, debt-free date, net worth in 10 years and at retirement.", href: "/whatif", cta: "Try a what-if" },
           ].map(p => (
             <Card key={p.t} className="flex flex-col">
               <Badge tone={p.tone}>{p.tag}</Badge>

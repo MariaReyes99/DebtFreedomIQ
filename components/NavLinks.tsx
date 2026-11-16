@@ -11,7 +11,7 @@ export default function NavLinks({ loggedIn }: { loggedIn: boolean }) {
     { href: "/health", label: "Financial Health", badge: "Free" },
     { href: "/help", label: "Find Help" },
     { href: "/plan", label: "My Freedom Plan" },
-    { href: "/whatif", label: "What-if & Retirement" },
+    { href: "/whatif", label: "Simulator" },
     { href: "/pricing", label: "Pricing" },
   ];
   const link = (i: (typeof items)[number], mobile = false) => {

@@ -34,7 +34,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
 
       {tab === "profile" && <Card><ProfileForm name={profile?.full_name ?? ""} email={user.email ?? ""} country={country?.code ?? null} /></Card>}
       {tab === "password" && <Card><PasswordForm /><p className="mt-4 text-sm text-navy-500">Forgot your current password? Log out and use &quot;Forgot password?&quot; on the login page.</p></Card>}
-      {tab === "billing" && <BillingPanel subs={subs} cards={cards} payments={payments ?? []} stripe={paymentsMode() === "stripe"} plusEnabled={process.env.PREMIUM_PLUS_ENABLED === "true"} />}
+      {tab === "billing" && <BillingPanel subs={subs} cards={cards} payments={payments ?? []} stripe={paymentsMode() === "stripe"} plusEnabled={process.env.PREMIUM_PLUS_ENABLED !== "false"} />}
       {tab === "history" && (
         <Card>
           <h2 className="text-lg font-bold">My Financial Health checks</h2>

@@ -13,7 +13,7 @@ export type Sub = {
   current_period_end: string | null; past_due_since: string | null; last_reminder_at: string | null; reminders_sent: number;
   created_at: string; cancelled_at: string | null;
 };
-const PERIOD_DAYS = 30;
+const PERIOD_DAYS = 365; // Premium Plus renews yearly
 const REMINDER_DAYS = [0, 3, 7];   // days after going on hold
 const EXPIRE_AFTER_DAYS = 30;       // on hold this long → ended
 
@@ -123,7 +123,7 @@ export async function runBilling(opts: { simulateDue?: boolean } = {}) {
     const due = opts.simulateDue || (sub.current_period_end && new Date(sub.current_period_end).getTime() <= now);
     if (sub.status === "active" && due) {
       const cards = await listCards(sub.user_id);
-      if (cards.length) { await chargeMock(sub, "Premium Plus — monthly renewal"); report.renewed++; continue; }
+      if (cards.length) { await chargeMock(sub, "Premium Plus — yearly renewal"); report.renewed++; continue; }
       await db.from("payments").insert({ user_id: sub.user_id, subscription_id: sub.id, amount: sub.amount ?? 0, currency: sub.currency, status: "failed", provider: "mock", description: "Renewal failed — no card on file" });
       await db.from("subscriptions").update({ status: "past_due", past_due_since: new Date().toISOString(), reminders_sent: 0 }).eq("id", sub.id);
       sub.status = "past_due"; sub.past_due_since = new Date().toISOString(); sub.reminders_sent = 0;

@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     if (subRef) {
       await markStripeSub(subRef, event.type === "invoice.paid" ? "active" : "past_due", event.type === "invoice.paid" ? end : undefined);
       const { data: sub } = await adminClient().from("subscriptions").select("id,user_id").eq("provider_ref", subRef).maybeSingle();
-      if (sub && inv.billing_reason !== "subscription_create") await adminClient().from("payments").insert({ user_id: sub.user_id, subscription_id: sub.id, amount: inv.amount_due ?? 0, currency: inv.currency, status: event.type === "invoice.paid" ? "paid" : "failed", provider: "stripe", description: "Premium Plus — monthly renewal" });
+      if (sub && inv.billing_reason !== "subscription_create") await adminClient().from("payments").insert({ user_id: sub.user_id, subscription_id: sub.id, amount: inv.amount_due ?? 0, currency: inv.currency, status: event.type === "invoice.paid" ? "paid" : "failed", provider: "stripe", description: "Premium Plus — yearly renewal" });
     }
   }
   if (event.type === "customer.subscription.deleted") {

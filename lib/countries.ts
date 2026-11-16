@@ -27,7 +27,7 @@ export type Country = {
   groups: ResourceGroup[];
   rightsNote: string; // short, country-specific borrower-rights note used in the plan + letter
   premiumPrice: number; // one-time Premium report, local currency (≈ NZ$19)
-  plusPrice: number; // Premium Plus monthly (coming later, ≈ NZ$9.99)
+  plusPrice: number; // Premium Plus: Financial Simulator, per year
   adviserRegister: { name: string; url: string }; // where to check an adviser is licensed
 };
 
@@ -79,7 +79,7 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     ],
     rightsNote: "Under the Credit Contracts and Consumer Finance Act (CCCFA) you can ask your lender for a hardship variation if illness, job loss, the end of a relationship or another unforeseen event makes repayments hard.",
     premiumPrice: 19,
-    plusPrice: 9.99,
+    plusPrice: 59,
     adviserRegister: { name: "Financial Service Providers Register", url: "https://fsp-register.companiesoffice.govt.nz" },
   },
 
@@ -124,7 +124,7 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     ],
     rightsNote: "SEC rules prohibit abusive collection practices such as threats, public shaming and contacting people in your phonebook. Keep records and report them. Never ignore a genuine court summons.",
     premiumPrice: 650,
-    plusPrice: 349,
+    plusPrice: 1990,
     adviserRegister: { name: "SEC Philippines – check registered firms", url: "https://www.sec.gov.ph" },
   },
 
@@ -172,7 +172,7 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     ],
     rightsNote: "Under the Fair Debt Collection Practices Act, debt collectors may not harass, threaten or deceive you. Be wary of companies charging upfront fees to settle debt — nonprofit credit counseling is free or low-cost.",
     premiumPrice: 12,
-    plusPrice: 6.49,
+    plusPrice: 35,
     adviserRegister: { name: "FINRA BrokerCheck & SEC adviser search", url: "https://brokercheck.finra.org" },
   },
 
@@ -222,7 +222,7 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     ],
     rightsNote: "Under the National Credit Code you can ask your lender for a financial hardship arrangement. If they refuse or don't respond, you can complain free to AFCA.",
     premiumPrice: 17,
-    plusPrice: 8.99,
+    plusPrice: 55,
     adviserRegister: { name: "ASIC Moneysmart – Financial advisers register", url: "https://moneysmart.gov.au/financial-advice/financial-advisers-register" },
   },
 
@@ -269,7 +269,7 @@ export const COUNTRIES: Record<CountryCode, Country> = {
     ],
     rightsNote: "In England and Wales, a free debt adviser can apply for Breathing Space — up to 60 days' protection from most interest, charges and creditor action. Never pay for debt advice; it's free from charities.",
     premiumPrice: 9,
-    plusPrice: 4.99,
+    plusPrice: 29,
     adviserRegister: { name: "FCA Financial Services Register", url: "https://register.fca.org.uk" },
   },
 };

@@ -111,3 +111,7 @@ middleware.ts              Session refresh, protected routes, anonymous id
 - `/whatif`: the person chooses what to do with each property (keep, sell, sell & buy smaller, rent out, interest-only, 30-year term), investments (sell %), a KiwiSaver/retirement hardship withdrawal and spending changes. Before/after table, cash runway, and up to 3 saved scenarios to compare. Logic: `lib/whatif.ts`.
 - **Retirement picture**: `lib/library.ts` converts the numbers into the Library's `HouseholdInput` and opens `NEXT_PUBLIC_LIBRARY_URL/?tab=numbers&view=full#plan=…`. The numbers travel in the URL fragment, so no server sees them, and nothing is typed twice. Age and retirement age are asked once (health check step 5, or on the What-if page).
 - Deploying both: two Vercel projects. Simplest: Library on a subdomain (e.g. `library.yourdomain.com`) and set `NEXT_PUBLIC_LIBRARY_URL` to it.
+
+### Financial Simulator (Premium Plus, yearly)
+- Premium (one-time): Freedom Plan + one what-if at a time (property and investment choices).
+- Premium Plus (`plusPrice` per year in `lib/countries.ts`; `PREMIUM_PLUS_ENABLED=false` hides it): refinance / extra repayments / new term, buy a property, invest or use savings as a lump sum, point released money at a chosen debt, interest saved and debt-free dates, net worth in 10 years and at retirement (Library engine copied to `lib/projection/`), up to 3 saved scenarios side by side.

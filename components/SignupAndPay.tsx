@@ -27,7 +27,7 @@ export default function SignupAndPay({ tier, price, country, mock, allowNoCard =
 
       <fieldset className="space-y-4 border-t border-navy-100 pt-5">
         <legend className="mb-1 text-lg font-bold">2. Payment</legend>
-        {allowNoCard && <label className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 font-normal text-amber-900"><input type="checkbox" name="noCard" checked={noCard} onChange={e => setNoCard(e.target.checked)} className="mt-0.5" /><span><strong>Testing: subscribe without a card.</strong> No card is saved and no payment is recorded.{tier === "premium_plus" ? " The next monthly renewal will fail and put Premium Plus on hold, so you can test reminders." : ""}</span></label>}
+        {allowNoCard && <label className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 font-normal text-amber-900"><input type="checkbox" name="noCard" checked={noCard} onChange={e => setNoCard(e.target.checked)} className="mt-0.5" /><span><strong>Testing: subscribe without a card.</strong> No card is saved and no payment is recorded.{tier === "premium_plus" ? " The next yearly renewal will fail and put Premium Plus on hold, so you can test reminders." : ""}</span></label>}
         {noCard ? null : mock ? (<>
           <div><label htmlFor="cn">Card number</label><input id="cn" defaultValue="4242 4242 4242 4242" readOnly className="mt-1.5 font-mono" /></div>
           <div className="grid grid-cols-2 gap-3">

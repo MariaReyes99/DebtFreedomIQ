@@ -95,17 +95,18 @@ export default function BillingPanel({ subs, cards, payments, stripe, plusEnable
           <><p className="mt-1 text-navy-600">You&apos;re on the <strong>Free</strong> plan.</p><Button href="/pricing" className="mt-4">See Premium options</Button></>
         ) : current.map(s => (
           <div key={s.id} className="mt-3 rounded-xl border border-navy-100 p-4">
-            <div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{s.tier === "premium" ? "Premium (one-time report)" : "Premium Plus (monthly)"}</p>{statusBadge(s)}</div>
+            <div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{s.tier === "premium" ? "Premium (one-time report)" : "Premium Plus (yearly)"}</p>{statusBadge(s)}</div>
             <p className="mt-1 text-sm text-navy-600">
               {s.tier === "premium" ? `Paid ${fmt(s.amount, s.currency)} on ${date(s.created_at)}. No renewals.`
-                : s.status === "active" ? `${fmt(s.amount, s.currency)} per month · next payment ${date(s.current_period_end)}`
+                : s.status === "active" ? `${fmt(s.amount, s.currency)} per year · next payment ${date(s.current_period_end)}`
                 : `We couldn't take your ${fmt(s.amount, s.currency)} payment on ${date(s.past_due_since)} because there's no card on file. Premium is on hold until you pay.`}
             </p>
             {s.status === "past_due" && <PayNow sub={s} hasCard={cards.length > 0} stripe={stripe} />}
             <CancelButton sub={s} />
           </div>
         ))}
-        {!plusEnabled && <p className="mt-3 text-xs text-navy-500">Premium Plus (monthly tracking) is coming soon.</p>}
+        {!plusEnabled && <p className="mt-3 text-xs text-navy-500">Premium Plus (Financial Simulator) is coming soon.</p>}
+        {plusEnabled && !current.some(s => s.tier === "premium_plus") && <div className="mt-4 rounded-xl bg-navy-950 p-4 text-white"><p className="font-semibold">Premium Plus: Financial Simulator</p><p className="mt-1 text-sm text-navy-200">Test selling, buying, refinancing and lump sums, and see your net worth in 10 years and at retirement.</p><Button href="/checkout?tier=premium_plus" size="sm" variant="secondary" className="mt-3">Upgrade</Button></div>}
       </Card>
 
       <Card>

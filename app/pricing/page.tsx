@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/session";
 import { money } from "@/lib/countries";
-import { paymentsMode } from "@/lib/payments";
+import { paymentsMode, plusEnabled } from "@/lib/payments";
 import { track } from "@/lib/events";
 import CheckoutButton from "@/components/CheckoutButton";
 import WaitlistButton from "@/components/WaitlistButton";
@@ -19,7 +19,7 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <PageHeader eyebrow="Pricing" title="Simple, fair pricing">Start free. Pay once only if your Freedom Plan is worth it to you. No subscription needed. Prices in {c.currency.toUpperCase()}.</PageHeader>
+      <PageHeader eyebrow="Pricing" title="Simple, fair pricing">Start free. Pay once for your Freedom Plan, or yearly for the Financial Simulator. Prices in {c.currency.toUpperCase()}.</PageHeader>
       {cancelled && <p className="mb-6 rounded-xl bg-amber-50 p-4 text-amber-900">Payment cancelled. You haven&apos;t been charged.</p>}
       {paymentsMode() === "mock" && <p className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800"><strong>Demo payments are on.</strong> Checkout won&apos;t take real money while the site is being tested.</p>}
 
@@ -37,7 +37,7 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
           <h2 className="text-xl font-bold">Premium</h2>
           <p className="mt-1 text-navy-600">Your personalised road to freedom.</p>
           <p className="mt-4 text-4xl font-bold">{money(c, c.premiumPrice)}</p><p className="text-sm text-navy-500">one-time report · no subscription</p>
-          <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check><strong>My Freedom Plan</strong> with 3 AI scenarios</Check><Check>Debt-free timeline &amp; monthly milestones</Check><Check>Payoff order &amp; savings targets</Check><Check>Goals tracker + &quot;what if&quot; questions</Check><Check>Find Help matching &amp; referral brief</Check><Check>Contact &amp; hardship letter templates</Check><Check>PDF export</Check></ul>
+          <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check><strong>My Freedom Plan</strong> with 3 AI scenarios</Check><Check>Debt-free timeline &amp; monthly milestones</Check><Check>Payoff order &amp; savings targets</Check><Check>Goals tracker</Check><Check>Try <strong>1 what-if scenario</strong> in the simulator</Check><Check>Find Help matching &amp; referral brief</Check><Check>Contact &amp; hardship letter templates</Check><Check>PDF export</Check></ul>
           <div className="mt-6">
             {tier !== "free" ? <Button href="/plan" size="lg" full>Open My Freedom Plan</Button>
               : <Button href="/checkout?tier=premium" size="lg" full>{`Get Premium — ${money(c, c.premiumPrice)}`}</Button>}
@@ -47,18 +47,18 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
         </Card>
 
         <Card className="flex flex-col bg-navy-950 text-white">
-          <div className="flex items-center gap-2"><h2 className="text-xl font-bold">Premium Plus</h2><Badge tone="teal">{process.env.PREMIUM_PLUS_ENABLED === "true" ? "New" : "Coming soon"}</Badge></div>
-          <p className="mt-1 text-navy-200">Stay on track, month after month.</p>
-          <p className="mt-4 text-4xl font-bold">{money(c, c.plusPrice, 2)}</p><p className="text-sm text-navy-300">per month · cancel anytime</p>
-          <ul className="mt-6 flex-1 space-y-2.5 text-[15px] text-navy-100"><Check>Everything in Premium</Check><Check>Ongoing progress tracking</Check><Check>Monthly plan recalculation</Check><Check>Progress monitoring &amp; reminders</Check></ul>
-          <div className="mt-6">{process.env.PREMIUM_PLUS_ENABLED === "true"
-            ? (tier === "premium_plus" ? <Button href="/account?tab=billing" size="lg" full variant="secondary">Manage subscription</Button> : <Button href="/checkout?tier=premium_plus" size="lg" full variant="secondary">Subscribe — {money(c, c.plusPrice, 2)}/month</Button>)
+          <div className="flex items-center gap-2"><h2 className="text-xl font-bold">Premium Plus</h2><Badge tone="teal">{plusEnabled() ? "New" : "Coming soon"}</Badge></div>
+          <p className="mt-1 text-navy-200"><strong className="text-white">Financial Simulator.</strong> See the result of every move before you make it.</p>
+          <p className="mt-4 text-4xl font-bold">{money(c, c.plusPrice)}</p><p className="text-sm text-navy-300">per year · cancel anytime</p>
+          <ul className="mt-6 flex-1 space-y-2.5 text-[15px] text-navy-100"><Check>Everything in Premium</Check><Check>Sell, buy, rent out or downsize property</Check><Check>Refinance, extra repayments, lump sums</Check><Check>Use shares, savings or {c.code === "NZ" ? "KiwiSaver" : "retirement savings"} to clear debt</Check><Check>Net worth in 10 years &amp; at retirement</Check><Check>Unlimited scenarios, compared side by side</Check><Check>Full retirement picture in the Investment Library</Check></ul>
+          <div className="mt-6">{plusEnabled()
+            ? (tier === "premium_plus" ? <Button href="/whatif" size="lg" full variant="secondary">Open the simulator</Button> : <Button href="/checkout?tier=premium_plus" size="lg" full variant="secondary">{`Get Premium Plus — ${money(c, c.plusPrice)}/year`}</Button>)
             : <WaitlistButton />}</div>
         </Card>
       </div>
 
       <div className="mt-12 grid gap-6 md:grid-cols-3">
-        {[["Why one-time?", "People under financial stress don't need another subscription. You pay once, only after you've seen your free results."],
+        {[["Why one-time for Premium?", "People under financial stress don't need another subscription. The Freedom Plan is a one-time payment, after you've seen your free results. The simulator is yearly because people come back to it whenever life changes."],
           ["Is my data safe?", "Your data is private to your account, protected by row-level security, and never sold. We never ask for bank logins."],
           ["Is this financial advice?", "No. DebtFreedomIQ gives general information and planning tools. For personal advice, use a licensed adviser. Find Help shows you how to check."]].map(([q, a]) => (
           <div key={q}><h3 className="font-bold">{q}</h3><p className="mt-1 text-sm text-navy-600">{a}</p></div>

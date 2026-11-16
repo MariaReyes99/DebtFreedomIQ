@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { createClient, isConfigured } from "@/lib/supabase/server";
 import { detectedCountryRaw } from "@/lib/geo";
 import { COUNTRIES, toCountryCode } from "@/lib/countries";
-import { paymentsMode, grantSubscriptionDetailed, createStripeCheckout, priceFor, testSubscribeAllowed, type PaidTier } from "@/lib/payments";
+import { paymentsMode, grantSubscriptionDetailed, createStripeCheckout, priceFor, PLUS_DAYS, testSubscribeAllowed, type PaidTier } from "@/lib/payments";
 import { track } from "@/lib/events";
 import type { AuthState } from "@/app/auth/actions";
 import { friendly } from "@/lib/auth-errors";
@@ -43,7 +43,7 @@ export async function signUpAndPay(_: AuthState, fd: FormData): Promise<AuthStat
   }
   // Mock payment: grant immediately (no money moves)
   const amount = Math.round(priceFor(c, tier) * 100);
-  const g = await grantSubscriptionDetailed({ userId: data.user.id, tier, provider: "mock", ref: `${noCard ? "test" : "mock"}_${crypto.randomUUID()}`, amount, currency: c.currency, periodEnd: tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null, saveDemoCard: true, testNoCard: noCard });
+  const g = await grantSubscriptionDetailed({ userId: data.user.id, tier, provider: "mock", ref: `${noCard ? "test" : "mock"}_${crypto.randomUUID()}`, amount, currency: c.currency, periodEnd: tier === "premium_plus" ? new Date(Date.now() + PLUS_DAYS * 864e5) : null, saveDemoCard: true, testNoCard: noCard });
   if (!g.ok) return { error: `Your account was created, but Premium couldn't be switched on. ${g.error} Then log in and try checkout again.` };
   await track("purchase", { userId: data.user.id, country: code, props: { tier, amount, currency: c.currency, mode: noCard ? "test_no_card" : "mock", combined: true } });
 

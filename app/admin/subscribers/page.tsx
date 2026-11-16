@@ -87,7 +87,7 @@ export default async function Subscribers({ searchParams }: { searchParams: Prom
                 return (
                   <tr key={s.id} className="border-t border-navy-100 align-top">
                     <td className="py-2"><div className="font-semibold">{p?.full_name || "—"}</div><div className="text-navy-500">{p?.email}</div><div className="text-xs text-navy-400">{p?.country}</div></td>
-                    <td>{s.tier === "premium" ? "Premium (one-time)" : "Premium Plus (monthly)"}</td>
+                    <td>{s.tier === "premium" ? "Premium (one-time)" : "Premium Plus (yearly)"}</td>
                     <td>{badge(s)}</td>
                     <td>{s.amount != null ? amt(s.amount, s.currency) : "—"}</td>
                     <td>{d(s.created_at)}</td>
