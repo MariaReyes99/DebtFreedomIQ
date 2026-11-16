@@ -14,7 +14,7 @@ const full = (sym: string) => (v: unknown) => { const n = Math.round(Number(v));
 /** Visually hidden data table so screen-reader users get the numbers. */
 function SrTable({ caption, rows }: { caption: string; rows: [string, string][] }) {
   return (
-    <table className="sr-only"><caption>{caption}</caption><tbody>{rows.map(([a, b]) => <tr key={a}><th scope="row">{a}</th><td>{b}</td></tr>)}</tbody></table>
+    <table className="sr-only"><caption>{caption}</caption><tbody>{rows.map(([a, b], i) => <tr key={`${i}-${a}`}><th scope="row">{a}</th><td>{b}</td></tr>)}</tbody></table>
   );
 }
 
