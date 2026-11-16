@@ -9,7 +9,7 @@ import CountrySearch from "./CountrySearch";
 import HealthResults from "./HealthResults";
 import { Button, Card, cx } from "./ui";
 
-type Result = { metrics: Metrics; advice: Advice; help: { category: HelpCategory; why: string }[]; saved: boolean };
+type Result = { metrics: Metrics; advice: Advice; help: { category: HelpCategory; why: string }[]; saved: boolean; assessmentId?: string | null };
 const PENDING = "dfiq_pending_assessment";
 const STEPS = ["Income", "Expenses", "Debts", "Assets & savings", "Your situation"] as const;
 const DEBT_TYPES: [DebtType, string][] = [["mortgage", "Mortgage / home loan"], ["credit_card", "Credit card"], ["personal_loan", "Personal loan"], ["car_loan", "Car loan"], ["bnpl", "Buy now pay later"], ["student_loan", "Student loan"], ["medical", "Medical / hospital bill"], ["tax", "Tax debt"], ["business", "Business debt"], ["family", "Family / friends"], ["other", "Other"]];
@@ -74,7 +74,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
       <div className="no-print mb-4 flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" onClick={() => { setResult(null); setStep(0); }}>← Edit my answers</Button>
       </div>
-      <HealthResults input={result.input} metrics={result.metrics} advice={result.advice} help={result.help} countryCode={c.code} loggedIn={loggedIn} saved={result.saved} isPremium={isPremium} />
+      <HealthResults input={result.input} metrics={result.metrics} advice={result.advice} help={result.help} countryCode={c.code} loggedIn={loggedIn} saved={result.saved} isPremium={isPremium} assessmentId={result.assessmentId} />
     </div>
   );
 

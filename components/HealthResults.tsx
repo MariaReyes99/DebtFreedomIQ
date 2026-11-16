@@ -5,13 +5,16 @@ import { HELP_CATEGORIES } from "@/lib/help";
 import { dataWarnings } from "@/lib/finance";
 import { Badge, Button, Card, ScoreRing, StatCard, Disclaimer, cx } from "./ui";
 import { ExpenseDonut, BalanceBars, DebtBars } from "./charts";
+import NextSteps from "./NextSteps";
+import GapPlan from "./GapPlan";
+import { buildSolutions } from "@/lib/solutions";
 
 const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
 const impactTone = { high: "red", medium: "amber", low: "gray" } as const;
 
-export default function HealthResults({ input, metrics: m, advice, help, countryCode, loggedIn, saved, isPremium }: {
+export default function HealthResults({ input, metrics: m, advice, help, countryCode, loggedIn, saved, isPremium, assessmentId, completedSteps }: {
   input: AssessmentInput; metrics: Metrics; advice: Advice; help: { category: HelpCategory; why: string }[];
-  countryCode: CountryCode; loggedIn: boolean; saved: boolean; isPremium: boolean;
+  countryCode: CountryCode; loggedIn: boolean; saved: boolean; isPremium: boolean; assessmentId?: string | null; completedSteps?: number[];
 }) {
   const c = COUNTRIES[countryCode];
   const f = (v: number) => money(c, v);
@@ -79,8 +82,7 @@ export default function HealthResults({ input, metrics: m, advice, help, country
         </Card>
         <div className="space-y-6">
           <Card as="section" className="border-teal-200 bg-teal-50/60">
-            <h2 className="text-xl font-bold">Your next steps this week</h2>
-            <ul className="mt-3 space-y-2">{advice.nextSteps.map((s, i) => <li key={i} className="flex gap-2"><span aria-hidden className="text-teal-600">☐</span><span>{s}</span></li>)}</ul>
+            <NextSteps steps={advice.nextSteps} assessmentId={assessmentId} initialDone={completedSteps} loggedIn={loggedIn} />
           </Card>
           <Card as="section">
             <h2 className="text-lg font-bold">Who could help you</h2>
@@ -91,6 +93,8 @@ export default function HealthResults({ input, metrics: m, advice, help, country
           </Card>
         </div>
       </div>
+
+      <GapPlan options={buildSolutions(input, m, c, f)} gap={Math.max(0, -m.monthlySurplus)} fmt={f} />
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-3">

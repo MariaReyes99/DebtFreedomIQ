@@ -170,3 +170,6 @@ alter table public.profiles add column if not exists region text;
 alter table public.profiles add column if not exists latitude numeric;
 alter table public.profiles add column if not exists longitude numeric;
 grant update (full_name, country, city) on public.profiles to authenticated;
+
+-- ── Ticked "next steps" on an assessment. Safe to run again. ──
+alter table public.financial_assessments add column if not exists completed_steps jsonb not null default '[]'::jsonb;

@@ -32,7 +32,7 @@ export const fmtFor = (c: Country) => (v: number) => money(c, v);
 export async function evaluate(input: AssessmentInput): Promise<{ metrics: Metrics; advice: Advice; country: Country }> {
   const country = COUNTRIES[toCountryCode(input.country) ?? DEFAULT_COUNTRY];
   const metrics = calculate(input);
-  const advice = (await aiAdvice(input, metrics, country)) ?? ruleAdvice(input, metrics, fmtFor(country));
+  const advice = (await aiAdvice(input, metrics, country)) ?? ruleAdvice(input, metrics, fmtFor(country), country);
   return { metrics, advice, country };
 }
 
@@ -78,5 +78,5 @@ export async function loadLatest(userId: string) {
     savings: Number(a.savings), situation: a.situation, goals: a.goals ?? "",
   };
   const advice: Advice = { summary: rec.summary ?? "", recommendations: rec.recommendations ?? [], nextSteps: rec.nextSteps ?? [], source: a.ai_source === "openai" ? "openai" : "rules" };
-  return { id: a.id as string, createdAt: a.created_at as string, input, metrics: calculate(input), advice };
+  return { id: a.id as string, createdAt: a.created_at as string, input, metrics: calculate(input), advice, completedSteps: (a.completed_steps ?? []) as number[] };
 }

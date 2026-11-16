@@ -71,6 +71,7 @@ lib/
   session.ts  events.ts  assessment.ts  plan-server.ts  supabase/
 supabase/schema.sql        8 tables + RLS + profile trigger
 docs/KEYS_GUIDE.md         Step-by-step: getting every key
+docs/EMAIL_SETUP.md        Branded emails from your own domain (no "Supabase Auth")
 middleware.ts              Session refresh, protected routes, anonymous id
 ```
 

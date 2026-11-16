@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import type { Advice, AssessmentInput, Metrics, HelpCategory } from "./types";
 import type { ScenarioResult } from "./plan";
 import type { Country } from "./countries";
+import { buildSolutions } from "./solutions";
+import { money } from "./countries";
 
 /**
  * All AI calls go through here. If OPENAI_API_KEY is missing, or a call fails,
@@ -48,6 +50,7 @@ function context(i: AssessmentInput, m: Metrics, c: Country) {
     assets: i.assets.map(a => ({ name: a.name, type: a.type, value: a.value })),
     expenses: i.expenses.map(e => ({ category: e.category, amount: e.amount, essential: e.essential })),
     situation: i.situation, goals: i.goals || null,
+    calculatedOptions: buildSolutions(i, m, c, v => money(c, v)).map(o => ({ option: o.title, estimatedMonthlyImpact: o.monthly, oneOff: o.oneOff ?? null, detail: o.detail })),
   });
 }
 
@@ -73,7 +76,7 @@ const adviceSchema = {
 
 export async function aiAdvice(i: AssessmentInput, m: Metrics, c: Country): Promise<Advice | null> {
   const out = await jsonCall<Omit<Advice, "source">>("financial_health_advice", adviceSchema,
-    `Here is a household's Financial Health check. Write a summary, the top 5 prioritised recommendations, and 3 next steps for this week.\n${context(i, m, c)}`);
+    `Here is a household's Financial Health check. Write a summary, the top 5 prioritised recommendations, and 3 next steps for this week. Be concrete: use the calculatedOptions (with their estimated monthly amounts) to show HOW to close any gap. Flag likely data-entry errors (e.g. yearly amounts entered as monthly, rent entered alongside a mortgage). Present property sales or loan restructures as options to discuss with an adviser, not instructions.\n${context(i, m, c)}`);
   return out ? { ...out, source: "openai" } : null;
 }
 

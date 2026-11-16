@@ -1,4 +1,6 @@
-import type { AssessmentInput, Metrics, Recommendation, Advice, DebtItem } from "./types";
+import type { AssessmentInput, Metrics, Recommendation, Advice } from "./types";
+import type { Country } from "./countries";
+import { buildSolutions } from "./solutions";
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 const lerp = (x: number, x0: number, x1: number) => clamp(((x - x0) / (x1 - x0)) * 100); // 0 at x0 → 100 at x1
@@ -61,51 +63,39 @@ export function isCrisis(i: AssessmentInput, m: Metrics) {
   return s.cantAffordFood || s.housingAtRisk || s.distressed || m.monthlyIncome < m.essentialExpenses || m.stressScore >= 75;
 }
 
-const highestRate = (debts: DebtItem[]) => [...debts].filter(d => d.type !== "mortgage" && d.balance > 0).sort((a, b) => b.rate - a.rate)[0];
 
 /** Deterministic recommendations — used when OpenAI isn't configured, and as a safety net. */
-export function ruleAdvice(i: AssessmentInput, m: Metrics, fmt: (n: number) => string): Advice {
-  const recs: (Recommendation & { p: number })[] = [];
+export function ruleAdvice(i: AssessmentInput, m: Metrics, fmt: (n: number) => string, c: Country): Advice {
+  const recs: Recommendation[] = [];
   const s = i.situation;
+  const gap = Math.max(0, -m.monthlySurplus);
   if (s.cantAffordFood || s.housingAtRisk)
-    recs.push({ p: 100, impact: "high", category: "Essentials", title: "Protect food, housing and power first", detail: "Debt repayments come after essentials. Contact the free services in Find Help today about food grants, rent arrears and hardship payments." });
+    recs.push({ impact: "high", category: "Essentials", title: "Protect food, housing and power first", detail: `Debt repayments come after essentials. Today, contact ${c.firstCall.name}${c.firstCall.phone ? ` (${c.firstCall.phone})` : ""} about food grants, arrears and hardship payments.` });
   if (s.collectionsOrCourt)
-    recs.push({ p: 95, impact: "high", category: "Legal", title: "Respond to collection or court notices now", detail: "Don't ignore them. Get free legal advice quickly. You may have rights you don't know about, and deadlines matter." });
-  if (m.monthlySurplus < 0)
-    recs.push({ p: 90, impact: "high", category: "Cash flow", title: `Close your ${fmt(-m.monthlySurplus)}/month gap`, detail: "You're spending more than comes in. Ask lenders for hardship arrangements, check government entitlements, and pause non-essential spending until the gap is closed." });
-  const top = highestRate(i.debts);
-  if (top && top.rate >= 15)
-    recs.push({ p: 80, impact: "high", category: "Debt", title: `Target ${top.name} first (${top.rate}% interest)`, detail: `Pay minimums on everything else and put any extra money on ${top.name}. Paying off the highest-interest debt first saves the most money.` });
-  if (m.emergencyMonths < 1)
-    recs.push({ p: 75, impact: "high", category: "Savings", title: `Build a starter emergency fund of ${fmt(Math.max(500, Math.round(m.essentialExpenses * 0.5 / 100) * 100))}`, detail: "A small buffer stops the next surprise bill from going on a credit card or loan." });
-  else if (m.emergencyMonths < 3)
-    recs.push({ p: 50, impact: "medium", category: "Savings", title: `Grow your emergency fund to 3 months (${fmt(Math.round((m.essentialExpenses + m.monthlyDebtPayments) * 3))})`, detail: "Automate a fixed amount into a separate savings account each payday." });
-  if (m.debtToIncome > 0.36)
-    recs.push({ p: 70, impact: "high", category: "Debt", title: "Reduce your debt-to-income ratio", detail: `Debt repayments take ${(m.debtToIncome * 100).toFixed(0)}% of your income (aim for under 36%). Avoid new credit and ask about lower rates or longer terms.` });
-  const bnpl = i.debts.filter(d => d.type === "bnpl" && d.balance > 0);
-  if (bnpl.length)
-    recs.push({ p: 60, impact: "medium", category: "Debt", title: "Stop using buy-now-pay-later", detail: "Clear existing BNPL plans and remove saved cards. Missed BNPL payments add fees and can affect your credit." });
-  if (s.medicalDebt)
-    recs.push({ p: 65, impact: "medium", category: "Health costs", title: "Ask about help with medical bills", detail: "Hospitals and health services often have hardship, payment-plan or charity-care options. Check Find Help before paying or borrowing." });
-  const mortgage = i.debts.find(d => d.type === "mortgage" && d.balance > 0);
-  if (mortgage && m.monthlySurplus > 0 && !(top && top.rate >= 15))
-    recs.push({ p: 45, impact: "medium", category: "Mortgage", title: "Review your mortgage rate and structure", detail: "A rate review, offset or extra repayments can save thousands. A mortgage adviser can compare options for free in many countries." });
-  const nonEssential = i.expenses.filter(e => !e.essential).reduce((a, e) => a + e.amount, 0);
-  if (nonEssential > m.monthlyIncome * 0.15)
-    recs.push({ p: 40, impact: "medium", category: "Spending", title: `Trim non-essential spending (${fmt(nonEssential)}/month)`, detail: "Cutting it by a quarter frees money for debt and savings. Start with subscriptions you don't use." });
-  if (m.monthlySurplus > 0 && m.emergencyMonths >= 3 && m.consumerDebts === 0)
-    recs.push({ p: 30, impact: "medium", category: "Growth", title: "Start investing your surplus", detail: "With no consumer debt and a solid buffer, consider long-term investing or extra retirement contributions. A licensed adviser can help." });
-  recs.push({ p: 10, impact: "low", category: "Habits", title: "Review your money every fortnight", detail: "Ten minutes every payday keeps you on track. Re-do your Financial Health check each month to see your progress." });
+    recs.push({ impact: "high", category: "Legal", title: "Respond to collection or court notices now", detail: "Don't ignore them. Get free legal advice this week. Deadlines matter, and you may have rights you don't know about." });
 
-  const recommendations = recs.sort((a, b) => b.p - a.p).slice(0, 5).map(({ p: _p, ...r }) => r);
+  // Concrete options with estimated monthly impact
+  const options = buildSolutions(i, m, c, fmt).filter(o => o.kind !== "fix");
+  for (const o of options) {
+    if (recs.length >= 5) break;
+    const impact: Recommendation["impact"] = o.monthly >= Math.max(200, gap * 0.15) ? "high" : o.monthly > 0 ? "medium" : "medium";
+    recs.push({ impact, category: o.kind, title: o.title, detail: o.caution ? `${o.detail} ⚠️ ${o.caution}` : o.detail });
+  }
+  if (recs.length < 5 && m.emergencyMonths < 3)
+    recs.push({ impact: "medium", category: "Savings", title: `Build an emergency fund of ${fmt(Math.round((m.essentialExpenses + m.monthlyDebtPayments) * 3 / 100) * 100)}`, detail: "Three months of essential costs stops the next surprise bill from becoming new debt. Automate a transfer each payday." });
+  if (recs.length < 5) recs.push({ impact: "low", category: "Habits", title: "Review your money every fortnight", detail: "Ten minutes each payday keeps you on track. Redo your Financial Health check monthly to see progress." });
+
+  const totalOptions = options.reduce((a, o) => a + o.monthly, 0);
   const summary = `Your Financial Health Score is ${m.healthScore}/100 (${m.healthBand}) and your stress level is ${m.stressBand.toLowerCase()}. ` +
-    (m.monthlySurplus >= 0 ? `You have about ${fmt(m.monthlySurplus)} left each month after bills and repayments.` : `You're short about ${fmt(-m.monthlySurplus)} each month.`);
+    (m.monthlySurplus >= 0
+      ? `You have about ${fmt(m.monthlySurplus)} left each month after bills and repayments.`
+      : `You're short about ${fmt(gap)} each month. We found options worth up to about ${fmt(totalOptions)}/month. See "Ways to close your gap" below.`);
   const nextSteps = [
-    recommendations[0] ? recommendations[0].title : "Review your results",
-    "List every debt with its exact balance and interest rate",
-    m.monthlySurplus < 0 || isCrisis(i, m) ? "Contact a free financial mentor/counsellor in Find Help this week" : "Set up an automatic transfer to savings on payday",
+    recs[0]?.title ?? "Review your results",
+    options.find(o => o.kind === "debt")?.title.replace(/:.*/, "") ?? "List every debt with its exact balance and interest rate",
+    m.monthlySurplus < 0 || isCrisis(i, m) ? `Call ${c.firstCall.name}${c.firstCall.phone ? ` on ${c.firstCall.phone}` : ""} (free) this week` : "Set up an automatic transfer to savings on payday",
   ];
-  return { summary, recommendations, nextSteps, source: "rules" };
+  return { summary, recommendations: recs.slice(0, 5), nextSteps, source: "rules" };
 }
 
 export type DataWarning = { message: string; step: number }; // step = wizard step to fix it (0 income … 3 assets)
@@ -127,6 +117,8 @@ export function dataWarnings(i: AssessmentInput, m: Metrics, fmt: (n: number) =>
     w.push({ step: 2, message: `Your debt repayments (${fmt(m.monthlyDebtPayments)}/month) are more than your income (${fmt(m.monthlyIncome)}/month). Check every amount is per month (not per year or fortnight), and that all income is included.` });
   const big = i.expenses.filter(e => m.monthlyIncome > 0 && e.amount > m.monthlyIncome * 0.6);
   if (big.length) w.push({ step: 1, message: `${big.map(e => `"${e.category}"`).join(", ")} ${big.length === 1 ? "is" : "are"} very large for one month. Is that a yearly amount? Divide yearly bills by 12.` });
+  const rentRow = i.expenses.find(e => /rent|board/i.test(e.category) && e.amount > 0);
+  if (rentRow && mortgages.length) w.push({ step: 1, message: `You entered "${rentRow.category}" (${fmt(rentRow.amount)}) and also have a home loan. If you own the home you live in, remove the rent. It may be counted twice.` });
   const noMin = i.debts.filter(d => d.balance > 0 && d.minPayment === 0 && d.type !== "family");
   if (noMin.length) w.push({ step: 2, message: `Add the monthly repayment for ${noMin.map(d => `"${d.name}"`).join(", ")}, otherwise we can't plan the payoff.` });
   return w;

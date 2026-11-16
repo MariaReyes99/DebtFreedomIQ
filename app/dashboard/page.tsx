@@ -8,6 +8,7 @@ import { fmtMonths } from "@/lib/plan";
 import type { Goal } from "@/lib/types";
 import type { ScenarioResult } from "@/lib/plan";
 import { ScoreHistory } from "@/components/charts";
+import NextSteps from "@/components/NextSteps";
 import { Badge, Button, Card, PageHeader, ScoreRing, StatCard } from "@/components/ui";
 
 export const metadata = { title: "Dashboard" };
@@ -59,6 +60,10 @@ export default async function Dashboard() {
           </Card>
         </div>
       </div>
+
+      <Card as="section" className="mt-6 border-teal-200 bg-teal-50/60">
+        <NextSteps steps={latest.advice.nextSteps} assessmentId={latest.id} initialDone={latest.completedSteps} loggedIn />
+      </Card>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card as="section">
