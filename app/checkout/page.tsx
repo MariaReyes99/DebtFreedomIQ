@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { money } from "@/lib/countries";
-import { paymentsMode } from "@/lib/payments";
+import { paymentsMode, testSubscribeAllowed } from "@/lib/payments";
 import MockPaymentForm from "@/components/MockPaymentForm";
 import CheckoutButton from "@/components/CheckoutButton";
 import { Badge, Card } from "@/components/ui";
@@ -28,9 +28,9 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
         <p className="mt-1 text-right text-xs text-navy-500">{c.currency.toUpperCase()}, incl. any applicable taxes</p>
       </Card>
       <Card>
-        {!user ? <SignupAndPay tier={tier} price={price} country={geo.code} mock={paymentsMode() === "mock"} /> : (<>
+        {!user ? <SignupAndPay tier={tier} price={price} country={geo.code} mock={paymentsMode() === "mock"} allowNoCard={testSubscribeAllowed()} /> : (<>
           <h2 className="mb-4 text-lg font-bold">Payment</h2>
-          {paymentsMode() === "mock" ? <MockPaymentForm tier={tier} label={`Pay ${price}`} /> : <CheckoutButton tier={tier} label={`Continue to secure payment — ${price}`} />}
+          {paymentsMode() === "mock" || testSubscribeAllowed() ? <MockPaymentForm tier={tier} label={`Pay ${price}`} allowNoCard={testSubscribeAllowed()} /> : <CheckoutButton tier={tier} label={`Continue to secure payment — ${price}`} />}
         </>)}
       </Card>
     </div>

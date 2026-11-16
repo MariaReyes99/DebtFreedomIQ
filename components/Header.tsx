@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getSession } from "@/lib/session";
+import { getSession, isAdmin } from "@/lib/session";
 import { crisisLabel } from "@/lib/countries";
 import UserMenu from "./UserMenu";
 import NavLinks from "./NavLinks";
@@ -34,7 +34,7 @@ export default async function Header() {
           <NavLinks loggedIn={Boolean(user)} />
           <div className="flex items-center gap-2">
             {country && <span className="hidden rounded-full bg-navy-50 px-3 py-1.5 text-sm font-semibold text-navy-700 md:inline">📍 {country.name}</span>}
-            <UserMenu name={displayName} premium={isPremium} />
+            <UserMenu name={displayName} premium={isPremium} admin={await isAdmin()} />
           </div>
         </div>
       </header>

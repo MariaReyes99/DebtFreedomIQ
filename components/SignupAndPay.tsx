@@ -1,5 +1,5 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signUpAndPay } from "@/app/checkout/actions";
 import { ResendBox } from "@/app/auth/AuthForms";
@@ -8,7 +8,8 @@ import CountrySearch from "./CountrySearch";
 import { Button } from "./ui";
 import type { CountryCode } from "@/lib/countries";
 
-export default function SignupAndPay({ tier, price, country, mock }: { tier: string; price: string; country: CountryCode | null; mock: boolean }) {
+export default function SignupAndPay({ tier, price, country, mock, allowNoCard = false }: { tier: string; price: string; country: CountryCode | null; mock: boolean; allowNoCard?: boolean }) {
+  const [noCard, setNoCard] = useState(false);
   const [s, action, pending] = useActionState<AuthState, FormData>(signUpAndPay, {});
   if (s.message && s.email) return <ResendBox email={s.email} next="/plan" intro={`✓ ${s.message} We sent the link to ${s.email}.`} />;
   return (
@@ -26,7 +27,8 @@ export default function SignupAndPay({ tier, price, country, mock }: { tier: str
 
       <fieldset className="space-y-4 border-t border-navy-100 pt-5">
         <legend className="mb-1 text-lg font-bold">2. Payment</legend>
-        {mock ? (<>
+        {allowNoCard && <label className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 font-normal text-amber-900"><input type="checkbox" name="noCard" checked={noCard} onChange={e => setNoCard(e.target.checked)} className="mt-0.5" /><span><strong>Testing: subscribe without a card.</strong> No card is saved and no payment is recorded.{tier === "premium_plus" ? " The next monthly renewal will fail and put Premium Plus on hold, so you can test reminders." : ""}</span></label>}
+        {noCard ? null : mock ? (<>
           <div><label htmlFor="cn">Card number</label><input id="cn" defaultValue="4242 4242 4242 4242" readOnly className="mt-1.5 font-mono" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label htmlFor="ce">Expiry</label><input id="ce" defaultValue="12 / 34" readOnly className="mt-1.5 font-mono" /></div>
@@ -37,7 +39,7 @@ export default function SignupAndPay({ tier, price, country, mock }: { tier: str
       </fieldset>
 
       <label className="flex items-start gap-3 font-normal text-navy-700"><input type="checkbox" name="consent" required className="mt-0.5" /> I understand DebtFreedomIQ gives general information and tools, not personalised financial advice.</label>
-      <Button type="submit" size="lg" full disabled={pending}>{pending ? "Setting up your Premium account…" : `Create account & pay ${price}`}</Button>
+      <Button type="submit" size="lg" full disabled={pending}>{pending ? "Setting up your Premium account…" : noCard ? "Create account & subscribe (test, no card)" : `Create account & pay ${price}`}</Button>
       <p className="text-center text-sm text-navy-600">Already have an account? <Link className="font-semibold text-teal-700" href={`/login?next=${encodeURIComponent(`/checkout?tier=${tier}`)}`}>Log in to pay</Link></p>
     </form>
   );

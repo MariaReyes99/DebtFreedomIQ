@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isAdmin, adminClient } from "@/lib/session";
 import { Card, PageHeader, StatCard } from "@/components/ui";
@@ -33,6 +34,7 @@ export default async function Admin() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <PageHeader eyebrow="Admin" title="Learning from your first 100 users">Goal: 100 people through Financial Health. Then decide what to build and charge for.</PageHeader>
+      <Link href="/admin/subscribers" className="mb-6 inline-flex rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700">💳 Subscribers &amp; payments →</Link>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="People completed check" value={`${people} / 100`} tone={people >= 100 ? "good" : "navy"} />
         <StatCard label="Avg health score" value={avg(healths)} />

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { createClient, isConfigured } from "@/lib/supabase/server";
 import { detectedCountryRaw } from "@/lib/geo";
 import { COUNTRIES, toCountryCode } from "@/lib/countries";
-import { paymentsMode, grantSubscription, createStripeCheckout, priceFor, type PaidTier } from "@/lib/payments";
+import { paymentsMode, grantSubscription, createStripeCheckout, priceFor, testSubscribeAllowed, type PaidTier } from "@/lib/payments";
 import { track } from "@/lib/events";
 import type { AuthState } from "@/app/auth/actions";
 import { friendly } from "@/lib/auth-errors";
@@ -23,6 +23,7 @@ export async function signUpAndPay(_: AuthState, fd: FormData): Promise<AuthStat
   if (!code) return { error: "Please choose your country." };
   if (!fd.get("consent")) return { error: "Please confirm you understand DebtFreedomIQ gives general information, not financial advice." };
   const c = COUNTRIES[code];
+  const noCard = fd.get("noCard") === "on" && testSubscribeAllowed();
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -36,15 +37,15 @@ export async function signUpAndPay(_: AuthState, fd: FormData): Promise<AuthStat
   await track("signup", { userId: data.user.id, country: code, props: { via: "checkout", tier } });
   await track("checkout_started", { userId: data.user.id, country: code, props: { tier, mode: paymentsMode(), combined: true } });
 
-  if (paymentsMode() === "stripe") {
+  if (paymentsMode() === "stripe" && !noCard) {
     const url = await createStripeCheckout({ userId: data.user.id, email, country: c, tier, origin: site() });
     redirect(url);
   }
   // Mock payment: grant immediately (no money moves)
   const amount = Math.round(priceFor(c, tier) * 100);
-  await grantSubscription({ userId: data.user.id, tier, provider: "mock", ref: `mock_${crypto.randomUUID()}`, amount, currency: c.currency, periodEnd: tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null, saveDemoCard: true });
-  await track("purchase", { userId: data.user.id, country: code, props: { tier, amount, currency: c.currency, mode: "mock", combined: true } });
+  await grantSubscription({ userId: data.user.id, tier, provider: "mock", ref: `${noCard ? "test" : "mock"}_${crypto.randomUUID()}`, amount, currency: c.currency, periodEnd: tier === "premium_plus" ? new Date(Date.now() + 30 * 864e5) : null, saveDemoCard: true, testNoCard: noCard });
+  await track("purchase", { userId: data.user.id, country: code, props: { tier, amount, currency: c.currency, mode: noCard ? "test_no_card" : "mock", combined: true } });
 
   if (data.session) redirect(`/checkout/success?tier=${tier}&mock=1`);
-  return { email, message: "Payment received and Premium is active. Confirm your email to open your Freedom Plan." };
+  return { email, message: (noCard ? "Test subscription is active (no card)." : "Payment received and Premium is active.") + " Confirm your email to open your Freedom Plan." };
 }

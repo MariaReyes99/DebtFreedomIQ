@@ -9,7 +9,7 @@ const Icon = () => (
   </svg>
 );
 
-export default function UserMenu({ name, premium }: { name: string | null; premium: boolean }) {
+export default function UserMenu({ name, premium, admin = false }: { name: string | null; premium: boolean; admin?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -19,11 +19,12 @@ export default function UserMenu({ name, premium }: { name: string | null; premi
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
   }, []);
   const btn = "inline-flex items-center gap-2 rounded-full border border-navy-200 bg-white px-3 py-1.5 text-sm font-semibold text-navy-800 hover:border-teal-400 hover:text-teal-700";
-  if (name) return (
+  if (name) return (<span className="inline-flex items-center gap-2">
+    {admin && <Link href="/admin/subscribers" className="rounded-full bg-navy-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-navy-800" title="Subscribers & payments">Admin</Link>}
     <Link href="/account" className={btn} title="Edit my profile">
       <Icon /><span className="max-w-[9rem] truncate">{name}</span>{premium && <span className="rounded-full bg-teal-500 px-1.5 text-[10px] font-bold uppercase text-white">Pro</span>}
     </Link>
-  );
+  </span>);
   return (
     <div className="relative" ref={ref}>
       <button type="button" className={btn} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
