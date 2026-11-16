@@ -28,7 +28,8 @@ export function secretKeyProblem(): string | null {
 }
 function explain(msg: string) {
   if (/invalid api key|jwt|unauthor/i.test(msg)) return "Supabase rejected the secret key. Check SUPABASE_SECRET_KEY in .env.local belongs to this project, then restart npm run dev.";
-  if (/row-level security|permission denied/i.test(msg)) return "The server key can't write to the database. SUPABASE_SECRET_KEY in .env.local must be the secret key, not the publishable one.";
+  if (/permission denied/i.test(msg)) return "The database hasn't given the app permission to use its tables. Run supabase/schema.sql again in the Supabase SQL Editor (the latest version adds the permissions).";
+  if (/row-level security/i.test(msg)) return "The server key can't write to the database. SUPABASE_SECRET_KEY in .env.local must be the secret key, not the publishable one.";
   if (/does not exist|column|schema cache|violates check constraint/i.test(msg)) return "The database is missing the latest changes. Run supabase/schema.sql again in the Supabase SQL Editor (it's safe to re-run).";
   if (/foreign key/i.test(msg)) return "Your login isn't in this Supabase project. Log out, log in again, and try once more.";
   return `Database error: ${msg}`;

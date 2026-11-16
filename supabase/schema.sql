@@ -209,5 +209,17 @@ drop policy if exists "own payments read" on public.payments;
 create policy "own payments read" on public.payments for select using (auth.uid() = user_id);
 -- (cards and payments are written by the server only)
 
+-- ── Access for the app's API keys. Newer Supabase projects don't grant this automatically. Safe to run again. ──
+grant usage on schema public to anon, authenticated, service_role;
+-- The server (secret key) manages everything; Row Level Security does not apply to it
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+-- Logged-in people: their own health checks and plans (Row Level Security limits them to their own rows)
+grant select, insert, update, delete on public.financial_assessments, public.assets, public.debts, public.expenses, public.financial_plans to authenticated;
+-- Read-only for their own profile, subscriptions, cards and payments; profile edits limited to these fields
+grant select on public.profiles, public.subscriptions, public.payment_methods, public.payments to authenticated;
+revoke update on public.profiles from authenticated;
+grant update (full_name, country, city) on public.profiles to authenticated;
+
 -- Tell the Supabase API to pick up the new tables and columns straight away
 notify pgrst, 'reload schema';
