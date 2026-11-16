@@ -208,3 +208,6 @@ create policy "own cards read" on public.payment_methods for select using (auth.
 drop policy if exists "own payments read" on public.payments;
 create policy "own payments read" on public.payments for select using (auth.uid() = user_id);
 -- (cards and payments are written by the server only)
+
+-- Tell the Supabase API to pick up the new tables and columns straight away
+notify pgrst, 'reload schema';
