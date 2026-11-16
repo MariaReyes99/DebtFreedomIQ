@@ -49,7 +49,7 @@ export default function HealthResults({ input, metrics: m, advice, help, country
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="teal">{advice.source === "openai" ? "✨ AI analysis" : "Smart analysis"}</Badge>
-              {saved ? <Badge tone="green">✓ Saved to your account</Badge> : !loggedIn && <Badge tone="gray">Not saved</Badge>}
+              {saved ? <Badge tone="green">✓ Saved to your account</Badge> : loggedIn ? <Badge tone="red">⚠ Not saved: database problem</Badge> : <Badge tone="gray">Not saved</Badge>}
             </div>
             <p className="mt-3 text-lg leading-relaxed text-navy-50">{advice.summary}</p>
           </div>

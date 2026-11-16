@@ -9,6 +9,7 @@ import type { Goal } from "@/lib/types";
 import type { ScenarioResult } from "@/lib/plan";
 import { ScoreHistory } from "@/components/charts";
 import NextSteps from "@/components/NextSteps";
+import PendingCheckSaver from "@/components/PendingCheckSaver";
 import { Badge, Button, Card, PageHeader, ScoreRing, StatCard } from "@/components/ui";
 
 export const metadata = { title: "Dashboard" };
@@ -25,13 +26,39 @@ export default async function Dashboard() {
   const c = latest ? COUNTRIES[toCountryCode(latest.input.country) ?? DEFAULT_COUNTRY] : country ?? displayCountry;
   const f = (v: number) => money(c, v);
 
-  if (!latest) return (
-    <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-      <h1 className="text-3xl font-bold">Welcome, {displayName} 👋</h1>
-      <p className="mt-2 text-navy-600">Start with your free Financial Health check. It takes about 10 minutes.</p>
-      <Button href="/health" size="lg" className="mt-6">Start my Financial Health check</Button>
-    </div>
-  );
+  if (!latest) {
+    const plan = isPremium ? "Premium" : "Free";
+    const steps = [
+      { n: 1, icon: "🩺", title: "Financial Health check", body: "Enter your income, bills, debts and what you own. You get your health and stress scores, warnings and a step-by-step plan.", href: "/health", cta: "Start (about 10 min)", primary: true, badge: "Free" },
+      { n: 2, icon: "🤝", title: "Find Help", body: `Free and not-for-profit services near you in ${c.name}: budgeting advice, food, housing, health bills and government support.`, href: "/help", cta: "See help near me", badge: "Free categories" },
+      { n: 3, icon: "🧭", title: "My Freedom Plan", body: "Three payoff scenarios with dates, milestones and the order to pay each debt.", href: isPremium ? "/plan" : "/pricing", cta: isPremium ? "Open my plan" : "See Premium", badge: "Premium" },
+    ];
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-12">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Welcome, {displayName} 👋</h1>
+          <p className="mt-2 text-navy-600">This is your dashboard. Once you&apos;ve done your Financial Health check, your scores, progress and next steps will show here.</p>
+          <p className="mt-3"><Badge tone={isPremium ? "teal" : "gray"}>{plan} plan</Badge> <Badge tone="gray">📍 {c.name}</Badge></p>
+        </div>
+        <PendingCheckSaver />
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {steps.map(s => (
+            <Card key={s.n} className={`flex flex-col ${s.primary ? "border-teal-300 ring-2 ring-teal-100" : ""}`}>
+              <div className="flex items-center justify-between"><span className="text-3xl" aria-hidden>{s.icon}</span><Badge tone={s.badge === "Premium" ? "navy" : "teal"}>{s.badge}</Badge></div>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-teal-700">Step {s.n}</p>
+              <h2 className="text-lg font-bold">{s.title}</h2>
+              <p className="mt-1 flex-1 text-sm text-navy-600">{s.body}</p>
+              <Button href={s.href} variant={s.primary ? "primary" : "secondary"} className="mt-4" full>{s.cta}</Button>
+            </Card>
+          ))}
+        </div>
+        <Card className="mt-6 flex flex-wrap items-center justify-between gap-3 bg-navy-50">
+          <p className="text-sm text-navy-700">Need to talk to someone now? <strong>{c.firstCall?.name ?? "A free financial mentor"}</strong>{c.firstCall?.phone ? <> on <a className="font-semibold text-teal-700" href={`tel:${c.firstCall.phone.replace(/\s/g, "")}`}>{c.firstCall.phone}</a></> : null} can help for free.</p>
+          <Link href="/account" className="text-sm font-semibold text-teal-700">My account →</Link>
+        </Card>
+      </div>
+    );
+  }
 
   const m = latest.metrics;
   const rec = plan?.ai_summary?.recommendedScenario as string | undefined;
