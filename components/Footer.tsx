@@ -17,7 +17,10 @@ export default function Footer() {
           <ul className="space-y-1.5"><li><Link href="/privacy" className="hover:text-white">Privacy</Link></li><li><Link href="/terms" className="hover:text-white">Terms</Link></li></ul>
           <p className="mt-4 text-xs text-navy-400">Not affiliated with or endorsed by any organisation listed in our directory.</p></nav>
       </div>
-      <div className="border-t border-navy-800 py-4 text-center text-xs text-navy-400">© {new Date().getFullYear()} DebtFreedomIQ</div>
+      <div className="border-t border-navy-800 py-4 text-center text-xs text-navy-400">
+        <p>{process.env.NEXT_PUBLIC_COPYRIGHT_TEXT || `Copyright © ${new Date().getFullYear()} DebtFreedomIQ. All rights reserved.`}</p>
+        <p className="mt-1"><Link href="/privacy" className="hover:text-white">Privacy Policy</Link> · <Link href="/terms" className="hover:text-white">Terms of Use</Link></p>
+      </div>
     </footer>
   );
 }
