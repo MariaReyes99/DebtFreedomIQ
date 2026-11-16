@@ -27,7 +27,7 @@ export default function MockPaymentForm({ tier, label, allowNoCard = false }: { 
       </div></>)}
       {err && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{err}</p>}
       <Button type="submit" size="lg" full disabled={pending}>{pending ? "Processing…" : noCard ? "Subscribe without a card (test)" : label}</Button>
-      <p className="text-center text-xs text-navy-500">🔒 Demo mode: this is a test card and no money is taken.</p>
+      <p className="text-center text-xs text-navy-500">{noCard ? "🧪 Test subscription: no card and no money." : "🔒 Demo mode: this is a test card and no money is taken."}</p>
     </form>
   );
 }

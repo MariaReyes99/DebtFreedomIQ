@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { adminClient } from "./supabase/server";
+import { SUPABASE_SECRET, SUPABASE_PUBLIC_KEY } from "./env";
 import type { Country } from "./countries";
 
 /**
@@ -13,20 +14,49 @@ export const paymentsMode = () => (process.env.PAYMENTS_MODE?.trim().startsWith(
 export type PaidTier = "premium" | "premium_plus";
 export const priceFor = (c: Country, tier: PaidTier) => (tier === "premium" ? c.premiumPrice : c.plusPrice);
 
-export async function grantSubscription(o: { userId: string; tier: PaidTier; provider: "mock" | "stripe" | "waiver"; ref: string; amount: number; currency: string; periodEnd?: Date | null; saveDemoCard?: boolean; testNoCard?: boolean }) {
+type GrantOpts = { userId: string; tier: PaidTier; provider: "mock" | "stripe" | "waiver"; ref: string; amount: number; currency: string; periodEnd?: Date | null; saveDemoCard?: boolean; testNoCard?: boolean };
+
+/** Plain-English reason the server can't write to the database (shown at checkout, logged in the terminal). */
+export function secretKeyProblem(): string | null {
+  const k = SUPABASE_SECRET;
+  if (!k) return "SUPABASE_SECRET_KEY is missing from .env.local. Add the secret key from Supabase → Project Settings → API Keys, then restart npm run dev.";
+  if (k === SUPABASE_PUBLIC_KEY || k.startsWith("sb_publishable_")) return "SUPABASE_SECRET_KEY in .env.local is the publishable key. Use the secret key (starts with sb_secret_) from Supabase → Project Settings → API Keys, then restart npm run dev.";
+  if (k.startsWith("eyJ")) {
+    try { const role = JSON.parse(Buffer.from(k.split(".")[1], "base64url").toString()).role; if (role !== "service_role") return "SUPABASE_SERVICE_ROLE_KEY in .env.local is the anon key. Use the service_role (secret) key, then restart npm run dev."; } catch { /* ignore */ }
+  }
+  return null;
+}
+function explain(msg: string) {
+  if (/invalid api key|jwt|unauthor/i.test(msg)) return "Supabase rejected the secret key. Check SUPABASE_SECRET_KEY in .env.local belongs to this project, then restart npm run dev.";
+  if (/row-level security|permission denied/i.test(msg)) return "The server key can't write to the database. SUPABASE_SECRET_KEY in .env.local must be the secret key, not the publishable one.";
+  if (/does not exist|column|schema cache|violates check constraint/i.test(msg)) return "The database is missing the latest changes. Run supabase/schema.sql again in the Supabase SQL Editor (it's safe to re-run).";
+  if (/foreign key/i.test(msg)) return "Your login isn't in this Supabase project. Log out, log in again, and try once more.";
+  return `Database error: ${msg}`;
+}
+
+export async function grantSubscriptionDetailed(o: GrantOpts): Promise<{ ok: boolean; error?: string }> {
+  const keyIssue = secretKeyProblem();
+  if (keyIssue) { console.error("[checkout]", keyIssue); return { ok: false, error: keyIssue }; }
   const db = adminClient();
   const { data, error } = await db.from("subscriptions").insert({
     user_id: o.userId, tier: o.tier, status: "active", provider: o.provider, provider_ref: o.ref,
     amount: o.amount, currency: o.currency, current_period_end: o.periodEnd ? o.periodEnd.toISOString() : null,
   }).select("id").single();
-  if (error || !data) return false; // duplicate provider_ref → already granted
+  if (error || !data) {
+    console.error("[checkout] couldn't save subscription:", error?.message);
+    return { ok: false, error: error?.code === "23505" ? "This payment was already recorded." : explain(error?.message ?? "unknown") };
+  }
   if (o.amount > 0 && !o.testNoCard) await db.from("payments").insert({ user_id: o.userId, subscription_id: data.id, amount: o.amount, currency: o.currency, status: "paid", provider: o.provider, description: o.tier === "premium" ? "Premium (one-time)" : "Premium Plus — first month" });
   if (o.saveDemoCard && !o.testNoCard) {
     // Demo checkout uses the test card; keep it on file (brand + last 4 only) so renewals work
     const { count } = await db.from("payment_methods").select("id", { count: "exact", head: true }).eq("user_id", o.userId);
     if (!count) await db.from("payment_methods").insert({ user_id: o.userId, provider: "mock", brand: "visa", last4: "4242", exp_month: 12, exp_year: 2034 });
   }
-  return true;
+  return { ok: true };
+}
+
+export async function grantSubscription(o: GrantOpts) {
+  return (await grantSubscriptionDetailed(o)).ok; // false also for duplicate provider_ref → already granted
 }
 
 export function stripe() {
