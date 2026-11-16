@@ -13,8 +13,12 @@ export const getSession = cache(async () => {
   let onHold: { id: string; tier: string; amount: number | null; currency: string | null } | null = null;
   if (isConfigured()) {
     const supabase = await createClient();
-    const { data } = await supabase.auth.getUser();
-    user = data.user ? { id: data.user.id, email: data.user.email } : null;
+    // Verify the login token (locally when possible) instead of asking Supabase on every page
+    try {
+      const { data } = await supabase.auth.getClaims();
+      const cl = data?.claims;
+      user = cl?.sub ? { id: cl.sub, email: typeof cl.email === "string" ? cl.email : undefined } : null;
+    } catch { user = null; }
     if (user) {
       const [{ data: p }, { data: subs }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),

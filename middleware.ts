@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_PUBLIC_KEY } from "@/lib/env";
+import { timedFetch } from "@/lib/supabase/fetch";
 
 const PROTECTED = ["/dashboard", "/account", "/admin"];
 
@@ -11,6 +12,7 @@ export async function middleware(request: NextRequest) {
   if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) return setAnon(response);
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
+    global: { fetch: timedFetch },
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll(list) {
@@ -20,7 +22,13 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims verifies the login token locally (no round trip to Supabase when the project uses
+  // signing keys) and still refreshes an expired session. Much faster than getUser on every click.
+  let user: { id: string } | null = null;
+  try {
+    const { data } = await supabase.auth.getClaims();
+    user = data?.claims?.sub ? { id: data.claims.sub } : null;
+  } catch { user = null; }
   const path = request.nextUrl.pathname;
   if (!user && PROTECTED.some(p => path.startsWith(p))) {
     const url = request.nextUrl.clone();
