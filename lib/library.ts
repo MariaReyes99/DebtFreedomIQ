@@ -7,7 +7,9 @@
 import type { AssessmentInput } from "./types";
 import { propertiesOf } from "./whatif";
 
-export const LIBRARY_URL = (process.env.NEXT_PUBLIC_LIBRARY_URL || "").replace(/\/+$/, "");
+// Your Library's live address on Vercel; NEXT_PUBLIC_LIBRARY_URL overrides it (e.g. a custom domain).
+const DEFAULT_LIBRARY_URL = "https://investment-research-library-mu.vercel.app";
+export const LIBRARY_URL = (process.env.NEXT_PUBLIC_LIBRARY_URL || DEFAULT_LIBRARY_URL).replace(/\/+$/, "");
 const LIB_COUNTRY: Record<string, string> = { NZ: "NZ", AU: "AU", US: "US", GB: "UK", PH: "PH" };
 const DEFAULT_RETIRE: Record<string, number> = { NZ: 65, AU: 67, US: 67, GB: 67, PH: 65 };
 const nm = (s: string) => (s.trim() || "Item").slice(0, 80);
