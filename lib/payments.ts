@@ -7,7 +7,8 @@ import type { Country } from "./countries";
  *  PAYMENTS_MODE=mock   (default) → no real payment; the mock checkout page grants access.
  *  PAYMENTS_MODE=stripe           → Stripe Checkout + webhook (see app/api/stripe/webhook).
  */
-export const paymentsMode = () => (process.env.PAYMENTS_MODE === "stripe" && process.env.STRIPE_SECRET_KEY ? "stripe" : "mock");
+const stripeKey = () => process.env.STRIPE_SECRET_KEY?.match(/sk_(test|live)_[A-Za-z0-9]+/)?.[0];
+export const paymentsMode = () => (process.env.PAYMENTS_MODE?.trim().startsWith("stripe") && stripeKey() ? "stripe" : "mock");
 
 export type PaidTier = "premium" | "premium_plus";
 export const priceFor = (c: Country, tier: PaidTier) => (tier === "premium" ? c.premiumPrice : c.plusPrice);
@@ -21,7 +22,7 @@ export async function grantSubscription(o: { userId: string; tier: PaidTier; pro
 }
 
 export function stripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!);
+  return new Stripe(stripeKey()!);
 }
 
 /** Stripe Checkout — used only when PAYMENTS_MODE=stripe. */

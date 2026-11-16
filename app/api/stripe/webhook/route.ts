@@ -8,7 +8,7 @@ import { track } from "@/lib/events";
 export async function POST(req: Request) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) return NextResponse.json({ error: "Stripe not configured" }, { status: 501 });
   let event: Stripe.Event;
-  try { event = stripe().webhooks.constructEvent(await req.text(), req.headers.get("stripe-signature")!, process.env.STRIPE_WEBHOOK_SECRET); }
+  try { event = stripe().webhooks.constructEvent(await req.text(), req.headers.get("stripe-signature")!, process.env.STRIPE_WEBHOOK_SECRET.match(/whsec_[A-Za-z0-9]+/)?.[0] ?? process.env.STRIPE_WEBHOOK_SECRET); }
   catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 400 }); }
 
   if (event.type === "checkout.session.completed") {
