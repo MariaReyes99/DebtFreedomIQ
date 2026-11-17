@@ -1,0 +1,84 @@
+# Going live: DebtFreedomIQ launch checklist
+
+Work through these in order. Tick each box. Keys and secrets go only in Vercel's settings and your own `.env.local`, never in chat, email or GitHub.
+
+## 1. Apply the latest code
+- [ ] In `C:\dev\debtfreedomiq`: `git am debtfreedomiq-fix.patch`, then `npm install`, then `npm run build` (it must finish with "Compiled successfully").
+- [ ] `git push` to GitHub.
+
+## 2. Database (Supabase)
+- [ ] Use a **production** Supabase project (separate from testing if you can).
+- [ ] SQL Editor → paste all of `supabase/schema.sql` → Run. It is safe to run again; it adds the support inbox, stories and audit log.
+- [ ] Authentication → URL configuration: Site URL = your live address; Redirect URLs = `https://YOUR-DOMAIN/**`.
+- [ ] Authentication → Email: turn on **Confirm email**; set a minimum password length of 10.
+- [ ] Authentication → Attack protection: turn on CAPTCHA (hCaptcha or Turnstile) and leaked-password protection if your plan offers it.
+- [ ] Database → Backups: check daily backups are on (Pro plan gives point-in-time recovery; recommended once you have paying customers).
+
+## 3. Hosting (Vercel)
+- [ ] Project → Settings → Environment Variables (Production). Add every line from `.env.example` that you use, with production values:
+  - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`
+  - Site: `NEXT_PUBLIC_SITE_URL=https://YOUR-DOMAIN`, `ADMIN_EMAILS=you@yourdomain` (comma-separate several), `NEXT_PUBLIC_COPYRIGHT_TEXT`
+  - Payments: `PAYMENTS_MODE=stripe`, `STRIPE_SECRET_KEY` (live, `sk_live_…`), `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`; `ALLOW_TEST_SUBSCRIBE` **removed or false**
+  - AI and library: `OPENAI_API_KEY`, `OPENAI_MODEL`, `CHAT_MODEL`, `EMBEDDING_MODEL`, `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
+  - Limits: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (**required in production**: rate limits and library allowances), `IP_HASH_SALT` (a long random value)
+  - Email: `RESEND_API_KEY`, `EMAIL_FROM` (an address on your verified domain)
+  - Jobs: `CRON_SECRET` (a long random value)
+  - Optional: `GOOGLE_PLACES_API_KEY`, `ALERT_WEBHOOK_URL`, `HARDSHIP_WAIVER` (leave unset: on), `PREMIUM_PLUS_ENABLED` (leave unset: on)
+- [ ] Remove `NEXT_PUBLIC_LIBRARY_URL` (no longer used).
+- [ ] Redeploy after changing variables.
+- [ ] Settings → Domains: add your domain; set the DNS records Vercel shows. HTTPS is automatic.
+- [ ] Settings → Deployment Protection: turn **off** "Vercel Authentication" for Production (otherwise visitors see a Vercel login).
+- [ ] Check the daily billing job is listed under Settings → Cron Jobs (`/api/billing/run`).
+
+## 4. Payments (Stripe)
+- [ ] Activate your Stripe account (business details, bank account, identity).
+- [ ] Turn on **Stripe Tax** if you must charge GST/VAT in a country, and register where required (see section 8).
+- [ ] Developers → Webhooks → add `https://YOUR-DOMAIN/api/stripe/webhook` with events `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+- [ ] Settings → Customer emails: turn on receipts.
+- [ ] Settings → Branding: your logo and colours (shown on the payment page).
+- [ ] Make one real purchase with your own card, then refund it from the Stripe Dashboard.
+
+## 5. Email (Resend)
+- [ ] Add and verify your domain (DNS records), then set `EMAIL_FROM`, e.g. `DebtFreedomIQ <support@yourdomain>`.
+- [ ] Send yourself a message from **Contact support** and check both emails arrive (yours and the admin alert).
+
+## 6. Research Library
+- [ ] If the production Upstash Vector index is new or empty, run `npm run seed` once on your computer with the production keys in `.env.local`.
+- [ ] Ask one question on **Explore my future → Ask the library** and check it answers with sources.
+
+## 7. Your admin area (monitoring and customer support)
+Log in with an address listed in `ADMIN_EMAILS`. Your name menu (top right) then shows **Admin**:
+
+| Page | What it's for |
+|---|---|
+| Insights | Funnel from visitors to buyers, situations people are in, help they need |
+| Subscribers & payments | Who is paying, on hold or cancelled; revenue this month and all time |
+| Customers | Search anyone; their plan, payments, messages; give free access, extend or cancel |
+| Support inbox | Messages from Contact support; reply by email, add notes, mark resolved |
+| Stories | Approve testimonials before they appear on Pricing |
+| Audit log | Every admin change: who, what, when |
+
+Refunds are made in the Stripe Dashboard; then cancel the plan on the customer's page.
+
+## 8. Legal and trust (have these checked by a professional)
+- [ ] Privacy policy and terms reviewed for the countries you sell in: NZ Privacy Act 2020, Australian Privacy Principles, UK GDPR, Philippine Data Privacy Act (register with the NPC if required), US state privacy laws.
+- [ ] Confirm the "general information, not financial advice" approach is acceptable in each market (e.g. NZ FMA financial advice rules, ASIC in Australia, FCA in the UK). Get advice before offering anything that recommends specific products.
+- [ ] Tax: GST registration in NZ once you pass the threshold; check GST/VAT rules for selling digital services to consumers in AU, the UK and the Philippines.
+- [ ] Set up a business entity and bank account; keep records of every payment (Stripe exports).
+- [ ] Ask each support service you list whether they're happy to be listed, and keep phone numbers up to date (check them every 3 months).
+- [ ] Make sure your privacy policy names your company, contact address and how to complain to the privacy regulator.
+
+## 9. Final checks on the live site
+- [ ] Do a Financial Health check as a new user, on a phone and a computer.
+- [ ] Tick "struggling to afford food" and check Get help shows "Free for you".
+- [ ] Buy Premium with a real card; check the plan unlocks and you see the payment in Admin.
+- [ ] Download your data and delete a test account (Account → My data).
+- [ ] Check https://securityheaders.com shows A or A+ for your domain.
+- [ ] Submit `https://YOUR-DOMAIN/sitemap.xml` in Google Search Console.
+
+## 10. After launch
+- [ ] Check the Support inbox daily; aim to reply within 2 working days.
+- [ ] Weekly: Admin → Insights and Subscribers.
+- [ ] Monthly: `npm audit` and update packages; review the audit log.
+- [ ] Ask happy users to share their story (Home page) and approve the good ones.
+- [ ] Known low-risk item: the library's AI package (Vercel AI SDK v4) has a low-severity advisory fixed only in v5. Plan that upgrade within a few months.
