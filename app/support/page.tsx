@@ -2,6 +2,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { getSession } from "@/lib/session";
 import { TOPICS } from "@/lib/support";
 import SupportForm from "./SupportForm";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata = { title: "Contact support" };
 
@@ -17,7 +18,8 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
       <Card>
         <SupportForm topics={TOPICS} email={user?.email ?? ""} name={profile?.full_name ?? ""} topic={TOPICS.some(t => t[0] === topic) ? topic! : "other"} />
       </Card>
-      <p className="mt-4 text-xs text-navy-500">We use your message only to help you. See <a href="/about" className="underline">About &amp; privacy</a>.</p>
+      <p className="mt-4 text-sm text-navy-600">Prefer email? Write to <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-teal-700 underline">{SUPPORT_EMAIL}</a>.</p>
+      <p className="mt-2 text-xs text-navy-500">We use your message only to help you. See <a href="/about" className="underline">About &amp; privacy</a>.</p>
     </div>
   );
 }

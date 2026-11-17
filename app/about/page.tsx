@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, PageHeader } from "@/components/ui";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata = { title: "About & privacy" };
 
@@ -38,7 +39,7 @@ export default function AboutPage() {
             <li>We don&apos;t sell your data, show ads, or share it with lenders or debt companies.</li>
             <li>You can download a copy of your data or delete your account at any time from <Link href="/account?tab=data" className="font-semibold text-teal-700 underline">Account → My data</Link>.</li>
           </ul>
-          <p className="text-sm">Read the full <Link href="/privacy" className="font-semibold text-teal-700 underline">Privacy policy</Link> and <Link href="/terms" className="font-semibold text-teal-700 underline">Terms</Link>.</p>
+          <p className="text-sm">Questions about your data? Email <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-teal-700 underline">{SUPPORT_EMAIL}</a>. Read the full <Link href="/privacy" className="font-semibold text-teal-700 underline">Privacy policy</Link> and <Link href="/terms" className="font-semibold text-teal-700 underline">Terms</Link>.</p>
         </Card>
 
         <Card as="section" className="space-y-3">

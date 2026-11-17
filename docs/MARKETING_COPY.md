@@ -1,6 +1,6 @@
 # DebtFreedomIQ: messaging and launch copy
 
-Replace [YOUR WEBSITE] and [YOUR EMAIL] before using. Use real stories only, with permission (Admin → Stories). Never promise results.
+Use real stories only, with permission (Admin → Stories). Never promise results.
 
 ## Positioning
 **DebtFreedomIQ is your financial triage and decision-support platform.**
@@ -23,16 +23,16 @@ AU A$17 / A$55 · US US$12 / US$35 · UK £9 / £29 · PH ₱650 / ₱1,990.
 
 ## Social posts (pair with the designs in the marketing kit)
 **1. Start here**
-Money feeling tight? In about 10 minutes, our free check shows where you stand, what to do first, and the free help near you, with phone numbers. No bank logins. No judgement. [YOUR WEBSITE]
+Money feeling tight? In about 10 minutes, our free check shows where you stand, what to do first, and the free help near you, with phone numbers. No bank logins. No judgement. debtfreedomiq.com
 
 **2. Crisis support is free**
-If you can't afford food, have lost your job, or have had a disconnection notice, collector letters or arrears, the help that gets you to the right person costs nothing on DebtFreedomIQ. Start with the free check: [YOUR WEBSITE]
+If you can't afford food, have lost your job, or have had a disconnection notice, collector letters or arrears, the help that gets you to the right person costs nothing on DebtFreedomIQ. Start with the free check: debtfreedomiq.com
 
 **3. Big decisions**
-Thinking of selling, refinancing, renting out or downsizing? Compare each option side by side first: your month, your risk, and where you'll be in 10 years. Then take it to an adviser, prepared. [YOUR WEBSITE]
+Thinking of selling, refinancing, renting out or downsizing? Compare each option side by side first: your month, your risk, and where you'll be in 10 years. Then take it to an adviser, prepared. debtfreedomiq.com
 
 **4. Pay once**
-The last thing you need when money's tight is another subscription. Your step-by-step plan out of debt is a one-time NZ$19. Your check and the free help directory are always free. [YOUR WEBSITE]
+The last thing you need when money's tight is another subscription. Your step-by-step plan out of debt is a one-time NZ$19. Your check and the free help directory are always free. debtfreedomiq.com
 
 Hashtags (pick 2–3): #MoneyHelp #DebtFree #FinancialWellbeing #CostOfLiving #NZFinance
 
@@ -49,7 +49,7 @@ Could we offer it free to the people you support? I'd love 20 minutes to show yo
 
 Ngā mihi,
 [YOUR NAME]
-[YOUR WEBSITE] · [YOUR EMAIL]
+debtfreedomiq.com · support@debtfreedomiq.com
 
 ## Launch plan (first 90 days)
 1. **Weeks 1–2: soft launch.** Friends, family and your course network do the check and give feedback through Contact support. Fix what's confusing.

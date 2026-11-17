@@ -9,7 +9,7 @@ Work through these in order. Tick each box. Keys and secrets go only in Vercel's
 ## 2. Database (Supabase)
 - [ ] Use a **production** Supabase project (separate from testing if you can).
 - [ ] SQL Editor → paste all of `supabase/schema.sql` → Run. It is safe to run again; it adds the support inbox, stories and audit log.
-- [ ] Authentication → URL configuration: Site URL = your live address; Redirect URLs = `https://YOUR-DOMAIN/**`.
+- [ ] Authentication → URL configuration: Site URL = your live address; Redirect URLs = `https://debtfreedomiq.com/**`.
 - [ ] Authentication → Email: turn on **Confirm email**; set a minimum password length of 10.
 - [ ] Authentication → Attack protection: turn on CAPTCHA (hCaptcha or Turnstile) and leaked-password protection if your plan offers it.
 - [ ] Database → Backups: check daily backups are on (Pro plan gives point-in-time recovery; recommended once you have paying customers).
@@ -17,11 +17,11 @@ Work through these in order. Tick each box. Keys and secrets go only in Vercel's
 ## 3. Hosting (Vercel)
 - [ ] Project → Settings → Environment Variables (Production). Add every line from `.env.example` that you use, with production values:
   - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`
-  - Site: `NEXT_PUBLIC_SITE_URL=https://YOUR-DOMAIN`, `ADMIN_EMAILS=you@yourdomain` (comma-separate several), `NEXT_PUBLIC_COPYRIGHT_TEXT`
+  - Site: `NEXT_PUBLIC_SITE_URL=https://debtfreedomiq.com`, `ADMIN_EMAILS` = the email(s) you log in with, comma-separated, `NEXT_PUBLIC_COPYRIGHT_TEXT`
   - Payments: `PAYMENTS_MODE=stripe`, `STRIPE_SECRET_KEY` (live, `sk_live_…`), `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`; `ALLOW_TEST_SUBSCRIBE` **removed or false**
   - AI and library: `OPENAI_API_KEY`, `OPENAI_MODEL`, `CHAT_MODEL`, `EMBEDDING_MODEL`, `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
   - Limits: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (**required in production**: rate limits and library allowances), `IP_HASH_SALT` (a long random value)
-  - Email: `RESEND_API_KEY`, `EMAIL_FROM` (an address on your verified domain)
+  - Email: `RESEND_API_KEY`, `EMAIL_FROM=DebtFreedomIQ <support@debtfreedomiq.com>`
   - Jobs: `CRON_SECRET` (a long random value)
   - Optional: `GOOGLE_PLACES_API_KEY`, `ALERT_WEBHOOK_URL`, `HARDSHIP_WAIVER` (leave unset: on), `PREMIUM_PLUS_ENABLED` (leave unset: on)
 - [ ] Remove `NEXT_PUBLIC_LIBRARY_URL` (no longer used).
@@ -33,13 +33,13 @@ Work through these in order. Tick each box. Keys and secrets go only in Vercel's
 ## 4. Payments (Stripe)
 - [ ] Activate your Stripe account (business details, bank account, identity).
 - [ ] Turn on **Stripe Tax** if you must charge GST/VAT in a country, and register where required (see section 8).
-- [ ] Developers → Webhooks → add `https://YOUR-DOMAIN/api/stripe/webhook` with events `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+- [ ] Developers → Webhooks → add `https://debtfreedomiq.com/api/stripe/webhook` with events `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
 - [ ] Settings → Customer emails: turn on receipts.
 - [ ] Settings → Branding: your logo and colours (shown on the payment page).
 - [ ] Make one real purchase with your own card, then refund it from the Stripe Dashboard.
 
 ## 5. Email (Resend)
-- [ ] Add and verify your domain (DNS records), then set `EMAIL_FROM`, e.g. `DebtFreedomIQ <support@yourdomain>`.
+- [ ] Add and verify your domain (DNS records), then set `EMAIL_FROM=DebtFreedomIQ <support@debtfreedomiq.com>`.
 - [ ] Send yourself a message from **Contact support** and check both emails arrive (yours and the admin alert).
 
 ## 6. Research Library
@@ -74,7 +74,7 @@ Refunds are made in the Stripe Dashboard; then cancel the plan on the customer's
 - [ ] Buy Premium with a real card; check the plan unlocks and you see the payment in Admin.
 - [ ] Download your data and delete a test account (Account → My data).
 - [ ] Check https://securityheaders.com shows A or A+ for your domain.
-- [ ] Submit `https://YOUR-DOMAIN/sitemap.xml` in Google Search Console.
+- [ ] Submit `https://debtfreedomiq.com/sitemap.xml` in Google Search Console.
 
 ## 10. After launch
 - [ ] Check the Support inbox daily; aim to reply within 2 working days.

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button, Card, PageHeader } from "@/components/ui";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata = { title: "For organisations", description: "Offer DebtFreedomIQ free to the people you support: financial mentors, community organisations, employers and banks' hardship teams." };
 
@@ -31,6 +32,7 @@ export default function Partners() {
           {["Access for everyone you support, under your name", "Anonymous reports: what situations people face and what help they need", "Clients who arrive prepared (with their consent)", "No advertising, no data selling, no bank logins"].map(x => <li key={x} className="flex gap-2"><span className="font-bold text-teal-600" aria-hidden>✓</span>{x}</li>)}
         </ul>
         <div className="mt-6 flex flex-wrap gap-3"><Button href="/support?topic=partner">Talk to us about a partnership</Button><Button href="/health" variant="secondary">Try the free check yourself</Button></div>
+        <p className="mt-3 text-sm text-navy-600">Or email <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Partnership")}`} className="font-semibold text-teal-700 underline">{SUPPORT_EMAIL}</a>.</p>
       </Card>
       <p className="mt-6 text-sm text-navy-500">DebtFreedomIQ gives general information and decision support, not regulated financial advice. It works alongside free financial mentoring and counselling services and points people to them. <Link href="/about" className="underline">About &amp; privacy</Link>.</p>
     </div>
