@@ -3,6 +3,7 @@ import { loadLatest } from "@/lib/assessment";
 import { COUNTRIES, DEFAULT_COUNTRY, money, toCountryCode } from "@/lib/countries";
 import { track } from "@/lib/events";
 import WhatIfLab from "@/components/WhatIfLab";
+import ExploreTabs from "@/components/ExploreTabs";
 import { Button, Card, Disclaimer, PageHeader, PremiumGate } from "@/components/ui";
 
 export const metadata = { title: "Explore my future" };
@@ -13,7 +14,7 @@ export default async function WhatIfPage({ searchParams }: { searchParams: Promi
   const latest = user ? await loadLatest(user.id) : null;
   const c = country ?? displayCountry;
   await track("premium_view", { userId: user?.id, country: c.code, props: { page: "whatif", premium: isPremium } });
-  const header = <PageHeader eyebrow="Premium" title="Explore my future">See where each move takes you, before you make it. Uses your Financial Health numbers: nothing to re-enter.</PageHeader>;
+  const header = <><PageHeader eyebrow="Premium" title="Explore my future">See where each move takes you, before you make it. Uses your Financial Health numbers: nothing to re-enter.</PageHeader><ExploreTabs /></>;
 
   if (!isPremium) return (
     <div className="mx-auto max-w-7xl px-4 py-10">{header}

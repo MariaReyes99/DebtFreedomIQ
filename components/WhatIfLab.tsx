@@ -4,7 +4,7 @@ import type { AssessmentInput } from "@/lib/types";
 import { calculate } from "@/lib/finance";
 import { applyChoices, debtTimeline, isEmpty, propertiesOf, NO_CHOICES, type Choices, type DebtChoice, type NewAsset, type PropAction, type PropChoice } from "@/lib/whatif";
 import { longView } from "@/lib/projection";
-import { libraryLink, LIBRARY_URL } from "@/lib/library";
+import { libraryLink } from "@/lib/library";
 import { fmtMonths, monthToDate } from "@/lib/plan";
 import { COUNTRIES, money, type CountryCode } from "@/lib/countries";
 import CashRunway from "./CashRunway";
@@ -320,7 +320,7 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
 
           <Card as="section">
             <h2 className="text-lg font-bold">Your retirement picture</h2>
-            {!plus ? <p className="mt-1 text-sm text-navy-600">🔒 Premium Plus shows your net worth in 10 years and at retirement for every scenario, and opens the full picture in the Research Library.</p> : (<>
+            {!plus ? <p className="mt-1 text-sm text-navy-600">🔒 Premium Plus shows your net worth in 10 years and at retirement for every scenario, and fills in My retirement picture for you.</p> : (<>
               {!base.age && (
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <label className="text-sm">Your age<input type="number" min={16} max={100} value={age} onChange={e => setAge(e.target.value ? Number(e.target.value) : "")} className="mt-1" /></label>
@@ -330,11 +330,11 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
                 </div>
               )}
               {base.age && <p className="mt-1 text-xs text-navy-500">Age {base.age}, retiring at {base.retireAge ?? 65} (from your Financial Health check).</p>}
-              <p className="mt-2 text-xs text-navy-500">Figures don&apos;t include {countryCode === "NZ" ? "NZ Super" : "the state pension"} yet. Add it in the Library for the full picture.</p>
-              {!LIBRARY_URL ? <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Set NEXT_PUBLIC_LIBRARY_URL to your Research Library address to turn on the full picture.</p> : ages ? (
+              <p className="mt-2 text-xs text-navy-500">Figures don&apos;t include {countryCode === "NZ" ? "NZ Super" : "the state pension"} yet. Add it in My retirement picture for the full picture.</p>
+              {ages ? (
                 <div className="mt-3 flex flex-col gap-2">
-                  <Button href={libraryLink(result.input, ages)!} target="_blank" rel="noopener" full>{changed ? "Full retirement picture with my choices ↗" : "See my full retirement picture ↗"}</Button>
-                  {changed && <Button href={libraryLink(base, ages)!} target="_blank" rel="noopener" variant="secondary" full size="sm">Compare: if I change nothing ↗</Button>}
+                  <Button href={libraryLink(result.input, ages)} full>{changed ? "Full retirement picture with my choices →" : "See my full retirement picture →"}</Button>
+                  {changed && <Button href={libraryLink(base, ages)} variant="secondary" full size="sm">Compare: if I change nothing →</Button>}
                 </div>
               ) : <p className="mt-3 text-xs text-navy-500">Enter your age to see it.</p>}
             </>)}

@@ -106,11 +106,22 @@ middleware.ts              Session refresh, protected routes, anonymous id
 - Testing: Admin page → **Run billing now** / **Test: treat every Premium Plus as due today**.
 - Run the new SQL at the bottom of `supabase/schema.sql` in the Supabase SQL editor (safe to run again).
 
-## What-if & Retirement (Premium) + Investment Research Library
+## Explore my future (simulator, My retirement picture, Research Library)
 
-- `/whatif`: the person chooses what to do with each property (keep, sell, sell & buy smaller, rent out, interest-only, 30-year term), investments (sell %), a KiwiSaver/retirement hardship withdrawal and spending changes. Before/after table, cash runway, and up to 3 saved scenarios to compare. Logic: `lib/whatif.ts`.
-- **Retirement picture**: `lib/library.ts` converts the numbers into the Library's `HouseholdInput` and opens `NEXT_PUBLIC_LIBRARY_URL/?tab=numbers&view=full#plan=…`. The numbers travel in the URL fragment, so no server sees them, and nothing is typed twice. Age and retirement age are asked once (health check step 5, or on the What-if page).
-- Deploying both: two Vercel projects. Simplest: Library on a subdomain (e.g. `library.yourdomain.com`) and set `NEXT_PUBLIC_LIBRARY_URL` to it.
+One app. Explore my future has five sub-pages (tabs: `components/ExploreTabs.tsx`):
+
+| Page | Route | Code |
+|---|---|---|
+| What-if simulator | `/whatif` | `components/WhatIfLab.tsx`, `lib/whatif.ts` |
+| My retirement picture | `/whatif/retirement` (+ `/guide`) | `research/components/LibraryWorkspace.tsx` (view "numbers") |
+| Ask the library | `/whatif/library` | same component (view "ask"), API `app/api/library/chat` |
+| How it works / Sources | `/whatif/library/how-it-works`, `/sources` | pages in `app/whatif/library` |
+
+- The former Investment Research Library lives in `research/` (`lib`, `components`, `data/corpus`, `tests`, `scripts`). Its styles are in `app/research.css`, scoped to `.research`.
+- **One subscription**: library questions use the DebtFreedomIQ login and plan (`research/lib/viewer.ts`): visitors 2 a month, Free 5, Premium 20, Premium Plus 300. Saving, comparing and printing retirement plans is Premium Plus. The library has no pricing, checkout or sign-in of its own.
+- **Retirement picture from the health check**: `lib/library.ts` converts the numbers into `HouseholdInput` and opens `/whatif/retirement?view=full#plan=…`. The numbers travel in the URL fragment, so no server sees them.
+- Library settings: `CHAT_MODEL`, `EMBEDDING_MODEL`, `UPSTASH_VECTOR_REST_*`, `UPSTASH_REDIS_REST_*`, `IP_HASH_SALT` (see `.env.example`). Load the documents once with `npm run seed`. Library tests: `npm run test:research`.
+- The AI SDK used by the library (v4) expects zod 3, so library code imports `zod/v3`; `.npmrc` sets `legacy-peer-deps=true` for that reason.
 
 ### Financial Simulator (Premium Plus, yearly)
 - Premium (one-time): Freedom Plan + one what-if at a time (property and investment choices).

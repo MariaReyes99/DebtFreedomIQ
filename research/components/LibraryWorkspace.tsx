@@ -1,0 +1,446 @@
+'use client';
+
+import { memo, useEffect, useMemo, useState } from 'react';
+import { useProjectorPlan } from './useProjectorPlan';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useChat } from '@ai-sdk/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { MilestoneTable, ProjectionChart } from './ProjectionChart';
+import { HouseholdAnalysisView, HouseholdChart, HouseholdComparison, HouseholdMilestones, HouseholdWarnings } from './HouseholdCharts';
+import { analyseHousehold } from '../lib/finance/householdAnalysis';
+import UpgradePanel, { type LimitTier } from './UpgradePanel';
+import { projectHousehold, type HouseholdInput } from '../lib/finance/household';
+import { openPlanLink, projectorLink } from '../lib/finance/householdLink';
+import { collectionLabel } from '../lib/collections';
+import { projectWealth, type ProjectionInput } from '../lib/finance/projections';
+import { householdFromSimple } from '../lib/finance/fromSimple';
+import { BasisLabel, CountrySelect, RetireInSelect, useCountry, useRetireIn } from './CountryPicker';
+import { COUNTRIES, disclaimerFor, isCountry, localTerms, questionHint, type CountryCode } from '../lib/countries';
+import { safeHttpUrl } from '../lib/security';
+import ProjectorShell from './ProjectorShell';
+import PlatformComparisonSection from './PlatformComparisonSection';
+import TrustedTools from './TrustedTools';
+import { useComparisonSummary } from '../lib/comparisonShare';
+
+type Tab = 'ask' | 'numbers';
+const CHAT_KEY = 'irl:chat';
+const INCLUDE_KEY = 'irl:include-plan';
+
+/** Questions people ask once their numbers are in. */
+const NUMBER_QUESTIONS = [
+  'What is my overall financial picture, combining my plan and my fund comparison?',
+  'Where could I improve my plan to retire comfortably?',
+  'What will it cost me in tax and fees to access my retirement money?',
+  'What do my numbers mean, in plain words?',
+  'Am I on track compared with the 4% rule?',
+  'Should I stay with my retirement fund provider, or move? Explain the fee and tax differences.',
+  'What are the biggest risks in my plan, and how could we reduce them as a couple?',
+  'Which tax rules apply if I retire in another country or move my retirement savings?',
+];
+
+type Source = {
+  text?: string; source?: string; document?: string; section?: string;
+  collection?: string; url?: string; asOf?: string; score?: number;
+};
+
+const SUGGESTIONS = [
+  "I'm 52 with NZD 500,000 and add $2,000 a month. Could I retire at 65 on $60,000 a year?",
+  'Why do many Kiwi investors hold CSPX instead of IVV?',
+  'How does the FIF de minimis threshold work?',
+  'Should I sell after a market crash?',
+  'Should I pay off my mortgage or invest?',
+];
+
+const TOPICS: [string, string][] = [
+  ['Retirement', 'How does the 4% rule work, and what are its limits?'],
+  ['KiwiSaver', 'How do KiwiSaver contributions and the government contribution work?'],
+  ['FIF tax', 'Explain the FIF fair dividend rate and comparative value methods.'],
+  ['ETFs', 'What is the difference between US-domiciled and Irish-domiciled ETFs?'],
+  ['Currency', 'How does the NZD exchange rate affect returns on US shares?'],
+];
+
+/**
+ * Projections are calculated once per set of inputs and reused. The chat
+ * redraws many times a second while an answer streams in, and recalculating
+ * (hundreds of simulated markets) on every redraw would freeze the page.
+ */
+const projectionCache = new Map<string, unknown>();
+function once<T>(key: string, compute: () => T): T {
+  if (!projectionCache.has(key)) {
+    projectionCache.set(key, compute());
+    if (projectionCache.size > 40) projectionCache.delete(projectionCache.keys().next().value as string);
+  }
+  return projectionCache.get(key) as T;
+}
+
+/** The chart is recomputed from the tool's inputs, so the full series never goes through the model. */
+const ProjectionFromArgs = memo(function ProjectionFromArgs({ args, country: selected }: { args: unknown; country: CountryCode }) {
+  // Label the chart in the currency the projection was run in, not just the sidebar setting
+  const requested = (args as { country?: unknown } | null)?.country;
+  const country: CountryCode = isCountry(requested) ? requested : selected;
+  const key = `wealth:${country}:${JSON.stringify(args)}`;
+  const data = useMemo(() => once(key, () => {
+    try {
+      const result = projectWealth(args as ProjectionInput);
+      // The same plan as a household, so simple questions also get the full analysis
+      const household = householdFromSimple(args as ProjectionInput, country);
+      const analysis = analyseHousehold(projectHousehold(household));
+      return { result, household, analysis };
+    } catch {
+      return null;
+    }
+  }), [key]);
+  if (!data) return null;
+  return (
+    <details className="source-disclosure projection-disclosure" open>
+      <summary>Projection</summary>
+      <BasisLabel country={country} inflationPct={data.result.inputs.inflationPct} />
+      <ProjectionChart result={data.result} country={country} />
+      <MilestoneTable result={data.result} country={country} />
+      <HouseholdAnalysisView analysis={data.analysis} country={country} />
+      <p className="projection-note">
+        <a href={projectorLink(data.household)} onClick={(e) => { e.preventDefault(); openPlanLink(projectorLink(data.household)); }}>Open these numbers in My retirement picture</a> to add income, property,
+        pensions and more, privately on your device.
+      </p>
+    </details>
+  );
+});
+
+/** Whole-household projection, redrawn in the browser from the tool's inputs. */
+const HouseholdFromArgs = memo(function HouseholdFromArgs({ args }: { args: unknown }) {
+  const key = `household:${JSON.stringify(args)}`;
+  const { result, analysis } = useMemo(() => once(key, () => {
+    try {
+      const r = projectHousehold(args as HouseholdInput);
+      return { result: r, analysis: analyseHousehold(r) };
+    } catch {
+      return { result: null, analysis: null };
+    }
+  }), [key]);
+  if (!result || !analysis) return null;
+  return (
+    <details className="source-disclosure projection-disclosure" open>
+      <summary>Household projection</summary>
+      <BasisLabel country={result.inputs.country} inflationPct={result.inputs.inflationPct} retireIn={result.inputs.retireIn} fx={result.inputs.fx} />
+      <HouseholdWarnings result={result} />
+      <HouseholdChart result={result} />
+      <HouseholdMilestones result={result} />
+      <HouseholdComparison result={result} />
+      <HouseholdAnalysisView analysis={analysis} country={result.inputs.country} />
+      <p className="projection-note">
+        <a href={projectorLink(args as HouseholdInput)} onClick={(e) => { e.preventDefault(); openPlanLink(projectorLink(args as HouseholdInput)); }}>Open these numbers in My retirement picture</a> to change them privately on your device.
+      </p>
+    </details>
+  );
+});
+
+/** Wraps Markdown tables so wide ones scroll instead of breaking the layout. */
+const MARKDOWN_COMPONENTS = {
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="table-scroll"><table>{children}</table></div>
+  ),
+};
+
+type UsageInfo = { remaining: number | null; limit: number; tier: LimitTier; limitsActive: boolean };
+
+/** The Research Library inside Explore my future: "ask" is Ask the library, "numbers" is My retirement picture. */
+export default function LibraryWorkspace({ view }: { view: Tab }) {
+  const router = useRouter();
+  const [country, setCountry] = useCountry();
+  const [retireIn, setRetireIn] = useRetireIn();
+  // The plan from My retirement picture, sent only while "Include my plan" is on
+  const projectorPlan = useProjectorPlan(country);
+  // On by default: the projector on this page is linked to the library automatically. People can switch it off.
+  const [includePlan, setIncludePlanState] = useState(true);
+  useEffect(() => {
+    try { if (window.localStorage.getItem(INCLUDE_KEY) === 'off') setIncludePlanState(false); } catch { /* ignore */ }
+  }, []);
+  const setIncludePlan = (on: boolean) => {
+    setIncludePlanState(on);
+    try { window.localStorage.setItem(INCLUDE_KEY, on ? 'on' : 'off'); } catch { /* ignore */ }
+  };
+  const sharePlan = includePlan && projectorPlan ? projectorPlan.plan : undefined;
+  const comparisonSummary = useComparisonSummary();
+  const shareComparison = includePlan && comparisonSummary ? comparisonSummary : undefined;
+  const tab = view;
+  const openTab = (t: Tab) => router.push(t === 'numbers' ? '/whatif/retirement' : '/whatif/library');
+
+  const [privacyNotice, setPrivacyNotice] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [answerHeld, setAnswerHeld] = useState(false);
+  const [usage, setUsage] = useState<UsageInfo | null>(null);
+  const [limitTier, setLimitTier] = useState<LimitTier | null>(null);
+
+  // Show how many questions are left before the first one is asked.
+  useEffect(() => {
+    fetch('/api/library/usage', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: UsageInfo | null) => {
+        if (!data) return;
+        setUsage(data);
+        if (data.limitsActive && data.remaining === 0) setLimitTier(data.tier);
+      })
+      .catch(() => {});
+  }, []);
+
+  const { messages, input, setInput, setMessages, handleInputChange, handleSubmit, status, error } = useChat({
+    api: '/api/library/chat',
+    initialMessages: savedChat(),
+    body: { country, retireIn: retireIn && retireIn !== country ? retireIn : undefined, plan: sharePlan, comparison: shareComparison },
+    onResponse: (res) => {
+      const notice = res.headers.get('X-Privacy-Notice');
+      setPrivacyNotice(notice ? decodeURIComponent(notice) : null);
+      const left = res.headers.get('X-Questions-Remaining');
+      setRemaining(left !== null ? Number(left) : null);
+      const reached = res.headers.get('X-Limit-Reached');
+      if (reached) setLimitTier(reached as LimitTier);
+      // That was the last question for today: show the upgrade panel under the answer.
+      else if (res.ok && left === '0') setLimitTier((res.headers.get('X-Questions-Tier') ?? 'free') as LimitTier);
+      setAnswerHeld(res.headers.get('X-Answer-Check') === 'held');
+    },
+  });
+  const askAbout = (q: string) => { if (view === 'ask') setInput(q); else router.push(`/whatif/library?q=${encodeURIComponent(q)}`); };
+  // Keep the conversation while moving between Explore my future pages (this browser tab only)
+  useEffect(() => {
+    if (status !== 'ready') return;
+    try { if (messages.length) sessionStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-30))); else sessionStorage.removeItem(CHAT_KEY); } catch { /* ignore */ }
+  }, [messages, status]);
+  // A question chosen on My retirement picture arrives as ?q=
+  useEffect(() => {
+    if (view !== 'ask') return;
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) { setInput(q.slice(0, 2000)); window.history.replaceState(null, '', window.location.pathname); }
+  }, [view, setInput]);
+  const isBusy = status === 'streaming' || status === 'submitted';
+  const limitReached = limitTier !== null;
+  const left = remaining ?? usage?.remaining ?? null;
+  const usageLabel =
+    left === null || !usage?.limitsActive
+      ? 'Answers cite the library'
+      : `${left} of ${usage.limit} questions left this month`;
+
+  return (
+    <div className="research">
+        {tab === 'numbers' && (
+          <div className="numbers-panel" id="panel-numbers">
+            <p className={`link-status${includePlan ? ' is-on' : ''}`} role="status">
+              <span>🔗 Linked to the library:</span>
+              <span className={projectorPlan ? 'is-yes' : 'is-no'}>{projectorPlan ? '✓' : '○'} Retirement picture{projectorPlan ? '' : ' (not set up yet)'}</span>
+              <span className={comparisonSummary ? 'is-yes' : 'is-no'}>{comparisonSummary ? '✓' : '○'} Fund comparison{comparisonSummary ? '' : ' (not set up yet)'}</span>
+              {!includePlan && <button type="button" className="link-button" onClick={() => setIncludePlan(true)}>Turn linking on</button>}
+            </p>
+            <div className="ask-about-numbers" role="group" aria-labelledby="ask-numbers-label">
+              <strong id="ask-numbers-label">Ask the library about these numbers:</strong>
+              {NUMBER_QUESTIONS.slice(0, 3).map((q) => <button key={q} type="button" className="suggestion-chip" onClick={() => askAbout(q)}>{q}</button>)}
+              <details className="more-questions">
+                <summary>More questions</summary>
+                {NUMBER_QUESTIONS.slice(3).map((q) => <button key={q} type="button" className="suggestion-chip" onClick={() => askAbout(q)}>{q}</button>)}
+              </details>
+            </div>
+            <p><a className="guide-link" href="/whatif/retirement/guide">Need help? Read the step-by-step guide →</a></p>
+            <ProjectorShell />
+            <PlatformComparisonSection />
+            <TrustedTools />
+            <div className="ask-about-numbers">
+              <strong>Questions about your plan or the comparison?</strong>
+              <button type="button" className="suggestion-chip" onClick={() => openTab('ask')}>Ask the library ↗</button>
+            </div>
+          </div>
+        )}
+
+        {tab === 'ask' && (
+        <div className="conversation-column" id="panel-ask">
+          <div className="library-toolbar">
+            <CountrySelect id="chat-country" value={country} onChange={setCountry} label="I live in" />
+            <RetireInSelect id="chat-retire-in" value={retireIn && retireIn !== country ? retireIn : null} livesIn={country} onChange={setRetireIn} />
+            <button className="new-chat-button" type="button" onClick={() => { setMessages([]); setInput(''); setPrivacyNotice(null); }}>
+              <span aria-hidden="true">+</span> New conversation
+            </button>
+            <span className="usage-meter"><span className="ready-dot" /> {usageLabel}</span>
+          </div>
+          {messages.length === 0 ? (
+            <section className="welcome-panel" aria-labelledby="welcome-title">
+              <h2 id="welcome-title" className="sr-only">Start a question</h2>
+              <p className="welcome-copy">
+                Research investing questions against guides on ETFs, KiwiSaver, FIF tax and retirement, and see what
+                your savings could grow to. Every answer shows its sources.
+              </p>
+              {COUNTRIES[country].coverage !== 'full' && (
+                <p className="coverage-note">
+                  You&apos;ve chosen {COUNTRIES[country].name}. Projections use {COUNTRIES[country].name} settings and{' '}
+                  {COUNTRIES[country].currency}. The library&apos;s {COUNTRIES[country].name} documents are{' '}
+                  {COUNTRIES[country].coverage === 'partial' ? 'still being expanded' : 'not added yet'}, so answers about its tax
+                  and pension rules will point you to official sources.
+                </p>
+              )}
+              <div className="topic-row" aria-label="Topics">
+                <span>Explore:</span>
+                {TOPICS.map(([label, question]) => (
+                  <button className="topic-chip" key={label} type="button" onClick={() => askAbout(question)}>{label}</button>
+                ))}
+              </div>
+              <div className="suggestion-list" aria-label="Suggested questions">
+                {SUGGESTIONS.map((q) => q.replace('NZD', COUNTRIES[country].currency)).map((question) => (
+                  <button className="suggestion-chip" key={question} type="button" onClick={() => setInput(question)}>
+                    {question}<span aria-hidden="true">↗</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <ul className="message-list" aria-live="polite">
+              {messages.map((message, i) => {
+                const isLastAssistant = message.role === 'assistant' && i === messages.length - 1;
+                const finished = message.role === 'assistant' && (!isLastAssistant || !isBusy);
+                return (
+                  <li className={`message-row message-${message.role}`} key={message.id}>
+                    {message.role === 'assistant' && <img className="assistant-mark" src="/icon.png" alt="" aria-hidden="true" />}
+                    <div className="message-content">
+                      <span className="message-speaker">{message.role === 'user' ? 'YOU' : 'LIBRARY'}</span>
+                      {message.role === 'assistant' ? (
+                        <div className="message-bubble markdown-body">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{message.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="message-bubble">{message.content}</div>
+                      )}
+
+                      {message.role === 'assistant' &&
+                        message.toolInvocations?.map((invocation) => {
+                          if (invocation.state !== 'result') return null;
+                          if (invocation.toolName === 'projectWealth') {
+                            return (invocation.result as { ok?: boolean })?.ok ? (
+                              <ProjectionFromArgs key={invocation.toolCallId} args={invocation.args} country={country} />
+                            ) : null;
+                          }
+                          if (invocation.toolName === 'projectHousehold') {
+                            return (invocation.result as { ok?: boolean })?.ok ? (
+                              <HouseholdFromArgs key={invocation.toolCallId} args={invocation.args} />
+                            ) : null;
+                          }
+                          if (invocation.toolName !== 'getInformation') return null;
+                          const sources = invocation.result as Source[];
+                          const scopes = [...new Set(sources.map((source) => source.collection).filter((collection): collection is string => Boolean(collection)))];
+                          return (
+                            <details className="source-disclosure" key={invocation.toolCallId} open={isLastAssistant}>
+                              <summary>
+                                Sources used
+                                {scopes.length > 0 && <> · {scopes.map(collectionLabel).join(', ')}</>}{' '}
+                                <span>{sources.length}</span>
+                              </summary>
+                              <ul className="source-list">
+                                {sources.map((source, index) => (
+                                  <li className="source-item" key={`${source.source}-${index}`} title={source.document || undefined}>
+                                    <span className="source-meta">
+                                      {safeHttpUrl(source.url) ? (
+                                        <a href={safeHttpUrl(source.url)} target="_blank" rel="noopener noreferrer">{source.document || source.source}</a>
+                                      ) : (
+                                        source.document || source.source
+                                      )}{' '}
+                                      <b>/</b> {source.section ?? 'Unlabeled section'}
+                                      {source.collection && <> <b>/</b> {collectionLabel(source.collection)}</>}
+                                      {source.asOf && <> <b>/</b> as at {source.asOf}</>}
+                                      <span className="source-score">
+                                        {typeof source.score === 'number' ? source.score.toFixed(2) : '—'}
+                                      </span>
+                                    </span>
+                                    <p>{source.text}</p>
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          );
+                        })}
+
+                      {finished && message.content && <p className="disclaimer-note">{disclaimerFor(country)}</p>}
+                    </div>
+                  </li>
+                );
+              })}
+              {isBusy && (
+                <li className="typing-status">
+                  <span /> {answerHeld
+                    ? 'Preparing and checking an educational answer…'
+                    : messages[messages.length - 1]?.toolInvocations?.some((t) => t.state === 'result')
+                      ? 'Writing the answer…'
+                      : 'Searching the library…'}
+                </li>
+              )}
+              {error && !limitReached && (
+                <li className="error-message">{error.message || 'The request could not be completed.'}</li>
+              )}
+            </ul>
+          )}
+
+          {messages.length === 0 && error && !limitReached && <p className="error-message">{error.message}</p>}
+          {limitTier && <UpgradePanel tier={limitTier} />}
+
+          <div className="composer-wrap">
+            <div className={`plan-share${includePlan && (projectorPlan || comparisonSummary) ? ' is-on' : ''}`}>
+              {projectorPlan || comparisonSummary ? (
+                <>
+                  <label className="plan-share-toggle">
+                    <input type="checkbox" role="switch" checked={includePlan} onChange={(ev) => setIncludePlan(ev.target.checked)} />
+                    <span className="plan-share-track" aria-hidden="true"><span /></span>
+                    <span>📎 Include my retirement picture (projector plan{comparisonSummary ? ' and fund comparison' : ''})</span>
+                  </label>
+                  <small>
+                    {includePlan
+                      ? `Linked: ${projectorPlan ? `your ${projectorPlan.source === 'full' ? '"Advanced"' : 'guided'} plan` : ''}${projectorPlan && comparisonSummary ? ' and ' : ''}${comparisonSummary ? 'your fund comparison' : ''} ${projectorPlan && comparisonSummary ? 'are' : 'is'} sent with each question while this is on. Names, tax numbers and bank numbers are removed first.`
+                      : 'Off: your numbers stay on this device.'}
+                  </small>
+                  {includePlan && (
+                    <div className="plan-share-ideas">
+                      {[
+                        'What do my numbers mean, in plain words?',
+                        ...(projectorPlan && comparisonSummary ? ['What is my overall financial picture?'] : []),
+                        'Where could I improve my plan?',
+                        ...(comparisonSummary ? ['Should I stay with my current fund or move?', 'What will it cost me to access my money?'] : []),
+                        'What tax rules apply across the countries in my plan?',
+                        'What are the biggest future risks to my retirement?',
+                      ].map((q) => (
+                        <button key={q} type="button" className="suggestion-chip" onClick={() => setInput(q)}>{q}</button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <small>Want answers about your own numbers? <button type="button" className="link-button" onClick={() => openTab('numbers')}>Fill in My retirement picture</button> and the library will use them automatically.</small>
+              )}
+            </div>
+            {privacyNotice && (
+              <p className="privacy-notice" role="status">
+                {privacyNotice}
+                <button type="button" onClick={() => setPrivacyNotice(null)} aria-label="Dismiss privacy notice">×</button>
+              </p>
+            )}
+            <form onSubmit={handleSubmit} className="composer">
+              <label className="sr-only" htmlFor="question-input">Ask the library</label>
+              <input
+                id="question-input"
+                value={input}
+                onChange={handleInputChange}
+                placeholder={limitReached ? "You've used this month's questions" : questionHint(country)}
+                disabled={isBusy || limitReached}
+                maxLength={2000}
+              />
+              <button className="send-button" type="submit" aria-label="Send question" disabled={!input.trim() || isBusy || limitReached}>
+                <span aria-hidden="true">↑</span>
+              </button>
+            </form>
+            <p className="composer-note">
+              Age and amounts are enough; don&apos;t include names, {localTerms(country).taxNumber} or bank details <span>·</span> education, not financial advice
+            </p>
+          </div>
+        </div>
+        )}
+    </div>
+  );
+}
+
+function savedChat() {
+  if (typeof window === 'undefined') return undefined;
+  try { const raw = sessionStorage.getItem(CHAT_KEY); return raw ? JSON.parse(raw) : undefined; } catch { return undefined; }
+}

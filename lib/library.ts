@@ -1,15 +1,12 @@
 /**
- * Hand the person's numbers to the Investment Research Library's wealth projector,
+ * Hand the person's numbers to My retirement picture (Explore my future → My retirement picture),
  * so they never type them twice. The numbers travel in the URL fragment (after #),
- * which browsers don't send to any server; the Library reads them in the browser.
- * Shape follows the Library's HouseholdInputSchema (lib/finance/household.ts).
+ * which browsers don't send to any server; the page reads them in the browser.
+ * Shape follows HouseholdInputSchema (research/lib/finance/household.ts).
  */
 import type { AssessmentInput } from "./types";
 import { propertiesOf } from "./whatif";
 
-// Your Library's live address on Vercel; NEXT_PUBLIC_LIBRARY_URL overrides it (e.g. a custom domain).
-const DEFAULT_LIBRARY_URL = "https://investment-research-library-mu.vercel.app";
-export const LIBRARY_URL = (process.env.NEXT_PUBLIC_LIBRARY_URL || DEFAULT_LIBRARY_URL).replace(/\/+$/, "");
 const LIB_COUNTRY: Record<string, string> = { NZ: "NZ", AU: "AU", US: "US", GB: "UK", PH: "PH" };
 const DEFAULT_RETIRE: Record<string, number> = { NZ: 65, AU: 67, US: 67, GB: 67, PH: 65 };
 const nm = (s: string) => (s.trim() || "Item").slice(0, 80);
@@ -52,8 +49,7 @@ const b64url = (text: string) => {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 };
 
-/** Link that opens the Library's projector already filled in. Null if the Library address isn't set. */
+/** Link that opens My retirement picture already filled in. */
 export function libraryLink(i: AssessmentInput, ages: { age: number; retireAge?: number }) {
-  if (!LIBRARY_URL) return null;
-  return `${LIBRARY_URL}/?tab=numbers&view=full#plan=${b64url(JSON.stringify(toHousehold(i, ages)))}`;
+  return `/whatif/retirement?view=full#plan=${b64url(JSON.stringify(toHousehold(i, ages)))}`;
 }

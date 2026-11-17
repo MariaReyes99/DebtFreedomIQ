@@ -12,9 +12,9 @@ export default function Footer() {
           <Disclaimer className="mt-4 max-w-md !text-navy-300" />
         </div>
         <nav aria-label="Product" className="text-sm"><p className="mb-2 font-semibold text-white">Product</p>
-          <ul className="space-y-1.5"><li><Link href="/health" className="hover:text-white">Financial Health (free)</Link></li><li><Link href="/help" className="hover:text-white">Find Help</Link></li><li><Link href="/plan" className="hover:text-white">My Freedom Plan</Link></li><li><Link href="/whatif" className="hover:text-white">Explore my future</Link></li><li><Link href="/pricing" className="hover:text-white">Pricing</Link></li></ul></nav>
+          <ul className="space-y-1.5">{[["/health", "Check my finances (free)"], ["/help", "Get help"], ["/plan", "My plan"], ["/whatif", "Explore my future"], ["/whatif/retirement", "· My retirement picture"], ["/whatif/library", "· Ask the library"], ["/pricing", "Pricing"]].map(([h, l]) => <li key={h}><Link href={h} className="hover:text-white">{l}</Link></li>)}</ul></nav>
         <nav aria-label="Company" className="text-sm"><p className="mb-2 font-semibold text-white">Company</p>
-          <ul className="space-y-1.5"><li><Link href="/privacy" className="hover:text-white">Privacy</Link></li><li><Link href="/terms" className="hover:text-white">Terms</Link></li></ul>
+          <ul className="space-y-1.5"><li><Link href="/about" className="hover:text-white">About &amp; privacy</Link></li><li><Link href="/privacy" className="hover:text-white">Privacy</Link></li><li><Link href="/terms" className="hover:text-white">Terms</Link></li></ul>
           <p className="mt-4 text-xs text-navy-400">Not affiliated with or endorsed by any organisation listed in our directory.</p></nav>
       </div>
       <div className="border-t border-navy-800 py-4 text-center text-xs text-navy-400">

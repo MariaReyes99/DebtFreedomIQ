@@ -6,18 +6,35 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:research": "tsx --test research/tests/*.test.ts",
+    "seed": "tsx research/lib/seed.ts",
+    "seed:check": "tsx research/lib/seed.ts --dry-run",
+    "eval": "tsx research/scripts/eval.ts",
+    "check:sources": "tsx research/scripts/check-sources.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.24",
+    "@ai-sdk/react": "^1.2.12",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
+    "@upstash/ratelimit": "^2.2.1",
+    "@upstash/redis": "^1.41.0",
+    "@upstash/vector": "^1.2.4",
+    "ai": "^4.3.19",
+    "dotenv": "^18.0.10",
+    "jszip": "^3.10.2",
     "next": "^15.5.29",
     "openai": "^7.57.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-is": "^19.3.1",
+    "react-markdown": "^9.1.0",
     "recharts": "^3.10.1",
+    "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
     "stripe": "^23.1.0",
+    "unpdf": "^1.9.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -26,9 +43,11 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "^8.5.23"
+    "postcss": "^8.5.23",
+    "jsondiffpatch": "^0.7.6"
   }
 }

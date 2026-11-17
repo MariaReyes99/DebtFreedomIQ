@@ -12,6 +12,7 @@ export default function NavLinks({ loggedIn }: { loggedIn: boolean }) {
     { href: "/plan", label: "My plan" },
     { href: "/whatif", label: "Explore my future" },
     { href: "/pricing", label: "Pricing" },
+    { href: "/about", label: "About & privacy" },
   ];
   return (
     <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">

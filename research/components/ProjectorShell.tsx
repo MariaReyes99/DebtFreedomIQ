@@ -1,0 +1,58 @@
+'use client';
+/**
+ * My retirement picture page: a guided, step-by-step setup by default, and an
+ * "Advanced" view with every option. Whatever was entered in the guided
+ * setup is carried into "Advanced", whichever way the person switches.
+ */
+import { useCallback, useEffect, useRef, useState } from 'react';
+import PlannerWizard from './PlannerWizard';
+import HouseholdPlanner from './HouseholdPlanner';
+import type { HouseholdInput } from '../lib/finance/household';
+import { projectorLink } from '../lib/finance/householdLink';
+
+type View = 'guided' | 'full';
+
+/** The current query string with view set (or removed for the guided view), keeping other settings such as the tab. */
+function withView(v: View) {
+  const p = new URLSearchParams(window.location.search);
+  if (v === 'full') p.set('view', 'full'); else p.delete('view');
+  return p.toString();
+}
+
+export default function ProjectorShell() {
+  const [view, setView] = useState<View>('guided');
+  const guidedPlan = useRef<HouseholdInput | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'full' || window.location.hash.startsWith('#plan=')) setView('full');
+  }, []);
+
+  const rememberGuided = useCallback((p: HouseholdInput | null) => { guidedPlan.current = p; }, []);
+
+  const choose = (v: View) => {
+    if (v === view) return;
+    if (v === 'full' && guidedPlan.current) {
+      // Hand the guided answers to "Advanced" (it reads them from the address, on this device only)
+      const hash = projectorLink(guidedPlan.current).split('#')[1];
+      window.history.replaceState(null, '', `${window.location.pathname}?${withView('full')}#${hash}`);
+    } else {
+      window.history.replaceState(null, '', `${window.location.pathname}?${withView(v)}`);
+    }
+    setView(v);
+  };
+
+  return (
+    <>
+      <div className="projector-tabs no-print" role="tablist" aria-label="How to fill in the projector">
+        <button type="button" role="tab" aria-selected={view === 'guided'} className={view === 'guided' ? 'is-on' : ''} onClick={() => choose('guided')}>
+          <span aria-hidden="true">🧭</span> Guided setup <small>Step by step, about 5 minutes</small>
+        </button>
+        <button type="button" role="tab" aria-selected={view === 'full'} className={view === 'full' ? 'is-on' : ''} onClick={() => choose('full')}>
+          <span aria-hidden="true">🛠️</span> Advanced <small>Every option on one page, for more control</small>
+        </button>
+      </div>
+      {view === 'guided' ? <PlannerWizard onPlanChange={rememberGuided} /> : <HouseholdPlanner />}
+    </>
+  );
+}
