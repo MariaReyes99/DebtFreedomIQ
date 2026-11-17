@@ -17,8 +17,12 @@ export default async function WhatIfPage({ searchParams }: { searchParams: Promi
 
   if (!isPremium) return (
     <div className="mx-auto max-w-7xl px-4 py-10">{header}
-      <PremiumGate title="See the result of every move before you make it" price={money(c, c.premiumPrice)}>
-        <div className="grid gap-4 md:grid-cols-2"><Card><p className="font-bold">Sell · Rent out · Downsize · Restructure</p><p>Before 3 months · After 14 months</p></Card><Card><p className="font-bold">Retirement at 65</p><p>Net worth NZ$ —</p></Card></div>
+      <PremiumGate title="See the result of every move before you make it" price={money(c, c.premiumPrice)} points={["Your best overall option, scored and explained", "How each move changes your month", "Risk dashboard: debt, housing and retirement", "Side-by-side comparison of every option", "Uses your Financial Health numbers: nothing to re-enter"]}>
+        <div className="space-y-4">
+          <Card><p className="text-xs font-bold uppercase text-teal-700">🏆 Best overall outcome · by our scoring</p><p className="mt-1 text-xl font-bold">Sell some investments + interest-only for 2 years</p><div className="mt-3 grid grid-cols-3 gap-3 text-sm"><div><p>Each month</p><p className="font-bold">−4,200 → +350</p></div><div><p>Financial risk</p><p className="font-bold">High → Medium</p></div><div><p>Score</p><p className="font-bold">78/100</p></div></div></Card>
+          <div className="grid gap-4 md:grid-cols-2"><Card><p className="font-bold">How each move changes your month</p><div className="mt-3 flex h-28 items-end gap-2">{[90, 30, 45, 60, 20, 70].map((h, k) => <div key={k} className="flex-1 rounded bg-teal-500" style={{ height: `${h}%` }} />)}</div></Card><Card><p className="font-bold">Risk dashboard</p>{["Financial risk", "Housing security", "Retirement readiness"].map(l => <div key={l} className="mt-3"><p className="text-sm">{l}</p><div className="h-2.5 rounded-full bg-amber-400" /></div>)}</Card></div>
+          <Card><p className="font-bold">Compare the options</p>{["Keep everything", "Sell the rental", "Interest-only", "Balanced mix"].map(l => <div key={l} className="mt-2 flex justify-between border-t pt-2 text-sm"><span>{l}</span><span>—</span></div>)}</Card>
+        </div>
       </PremiumGate>
     </div>
   );

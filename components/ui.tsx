@@ -69,15 +69,16 @@ export function PageHeader({ eyebrow, title, children, actions }: { eyebrow?: st
   );
 }
 
-export function PremiumGate({ title, children, price }: { title: string; children: ReactNode; price: string }) {
+export function PremiumGate({ title, children, price, points }: { title: string; children: ReactNode; price: string; points?: string[] }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-navy-100 bg-white">
-      <div className="pointer-events-none select-none p-6 opacity-40 blur-[3px]" aria-hidden>{children}</div>
-      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-white via-white/85 to-white/40 p-6">
-        <div className="max-w-md text-center">
+    <div className="grid overflow-hidden rounded-2xl border border-navy-100 bg-white">
+      <div className="pointer-events-none select-none p-6 opacity-40 blur-[3px] [grid-area:1/1]" aria-hidden>{children}</div>
+      <div className="relative z-10 flex items-center justify-center bg-gradient-to-t from-white via-white/85 to-white/40 p-4 py-10 [grid-area:1/1]">
+        <div className="max-w-md rounded-2xl bg-white/90 p-6 text-center shadow-lg ring-1 ring-navy-100">
           <Badge tone="navy">🔒 Premium</Badge>
           <h3 className="mt-3 text-xl font-bold text-navy-900">{title}</h3>
           <p className="mt-2 text-navy-600">Unlock with a one-time Premium report for <strong>{price}</strong>. No subscription.</p>
+          {points && <ul className="mx-auto mt-3 max-w-sm space-y-1 text-left text-sm text-navy-800">{points.map(p => <li key={p}>✓ {p}</li>)}</ul>}
           <div className="mt-4 flex justify-center gap-2"><Button href="/checkout?tier=premium">Unlock Premium</Button><Button href="/pricing" variant="secondary">See what&apos;s included</Button></div>
         </div>
       </div>
