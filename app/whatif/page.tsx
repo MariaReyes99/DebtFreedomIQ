@@ -5,14 +5,14 @@ import { track } from "@/lib/events";
 import WhatIfLab from "@/components/WhatIfLab";
 import { Button, Card, Disclaimer, PageHeader, PremiumGate } from "@/components/ui";
 
-export const metadata = { title: "Financial Simulator" };
+export const metadata = { title: "Explore my future" };
 
 export default async function WhatIfPage() {
   const { user, isPremium, tier, country, displayCountry } = await getSession();
   const latest = user ? await loadLatest(user.id) : null;
   const c = country ?? displayCountry;
   await track("premium_view", { userId: user?.id, country: c.code, props: { page: "whatif", premium: isPremium } });
-  const header = <PageHeader eyebrow="Premium" title="Financial Simulator">See the result of every move before you make it: sell, buy, refinance or use savings, and see your cash flow, debts, net worth and retirement change. Uses the numbers from your Financial Health check, so there&apos;s nothing to re-enter.</PageHeader>;
+  const header = <PageHeader eyebrow="Premium" title="Explore my future">See the result of every move before you make it: sell, buy, refinance or use savings, and see your cash flow, debts, net worth and retirement change. Uses the numbers from your Financial Health check, so there&apos;s nothing to re-enter.</PageHeader>;
 
   if (!isPremium) return (
     <div className="mx-auto max-w-7xl px-4 py-10">{header}

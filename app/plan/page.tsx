@@ -30,7 +30,7 @@ export default async function PlanPage() {
     const fp = latest.incomplete ? null : buildFreedomPlan(latest.input, (saved?.choices ?? null) as Choices | null, COUNTRIES[cc], (v: number) => money(COUNTRIES[cc], v));
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
-        <PageHeader eyebrow="Premium" title="My Freedom Plan">Your step-by-step plan, with dates: stabilise, build a buffer, then pay down debt. Built from your Financial Health check ({new Date(latest.createdAt).toLocaleDateString()}) and the choices you make in the Simulator.</PageHeader>
+        <PageHeader eyebrow="Premium" title="My Freedom Plan">Your step-by-step plan, with dates: stabilise, build a buffer, then pay down debt. Built from your Financial Health check ({new Date(latest.createdAt).toLocaleDateString()}) and the choices you make in Explore my future.</PageHeader>
         {latest.incomplete ? (
           <Card className="border-amber-300 bg-amber-50 text-center"><h2 className="text-xl font-bold text-amber-900">We need your numbers again</h2><p className="mx-auto mt-2 max-w-lg text-amber-900">Your last Financial Health check was saved without its debts (a database setup issue that&apos;s now fixed), so we can&apos;t build an accurate plan from it. Please go through the check again; your answers are quick to re-enter.</p><Button href="/health" className="mt-5">Redo my Financial Health check</Button></Card>
         ) : saved ? (<>
@@ -43,7 +43,7 @@ export default async function PlanPage() {
             paydownBlocked={fp?.paydown.blocked ? `Right now there's no spare money for extra repayments, so the three payoff scenarios would all look the same. Each debt keeps its normal repayment until then: ${fp.paydown.perDebt.map(d => `${d.name} ${d.date ? `paid off ${new Date(d.date).toLocaleDateString("en-NZ", { month: "short", year: "numeric" })}` : "not at this rate"}`).join(" · ")}.` : undefined}
             plan={{ id: saved.id, createdAt: saved.created_at, strategy: saved.strategy, scenarios: saved.scenarios, summary: saved.ai_summary, goals: saved.goals } as PlanData} />
         </>) : (
-          <Card className="text-center"><h2 className="text-xl font-bold">Ready to build your Freedom Plan</h2><p className="mx-auto mt-2 max-w-lg text-navy-600">We&apos;ll turn your numbers (and any choices you&apos;ve made in the Simulator) into dated steps: stabilise, build a buffer, then pay down debt.</p><div className="mt-5 flex justify-center"><GeneratePlanButton /></div></Card>
+          <Card className="text-center"><h2 className="text-xl font-bold">Ready to build your Freedom Plan</h2><p className="mx-auto mt-2 max-w-lg text-navy-600">We&apos;ll turn your numbers (and any choices you&apos;ve made in Explore my future) into dated steps: stabilise, build a buffer, then pay down debt.</p><div className="mt-5 flex justify-center"><GeneratePlanButton /></div></Card>
         )}
         <Disclaimer className="mt-6" />
       </div>

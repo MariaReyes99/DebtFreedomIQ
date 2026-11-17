@@ -28,7 +28,7 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
           <h2 className="text-xl font-bold">Free</h2>
           <p className="mt-1 text-navy-600">Know where you stand.</p>
           <p className="mt-4 text-4xl font-bold">{money(c, 0)}</p><p className="text-sm text-navy-500">forever</p>
-          <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check>Financial Health dashboard</Check><Check>Health, Stress &amp; Emergency Fund scores</Check><Check>Net worth &amp; debt-to-income ratio</Check><Check>Top 5 recommendations &amp; next steps</Check><Check>Types of help + free support directory</Check></ul>
+          <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check>Financial Health dashboard</Check><Check>Financial Health, money stress &amp; safety savings scores</Check><Check>Your financial position &amp; debt load, explained</Check><Check>Top 5 recommendations &amp; next steps</Check><Check>Types of help + free support directory</Check></ul>
           <Button href="/health" variant="secondary" size="lg" full className="mt-6">{user ? "Go to Financial Health" : "Start free"}</Button>
         </Card>
 
@@ -37,7 +37,7 @@ export default async function Pricing({ searchParams }: { searchParams: Promise<
           <h2 className="text-xl font-bold">Premium</h2>
           <p className="mt-1 text-navy-600">Your personalised road to freedom.</p>
           <p className="mt-4 text-4xl font-bold">{money(c, c.premiumPrice)}</p><p className="text-sm text-navy-500">one-time report · no subscription</p>
-          <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check><strong>My Freedom Plan</strong> with 3 AI scenarios</Check><Check>Debt-free timeline &amp; monthly milestones</Check><Check>Payoff order &amp; savings targets</Check><Check>Goals tracker</Check><Check>Try <strong>1 what-if scenario</strong> in the simulator</Check><Check>Find Help matching &amp; referral brief</Check><Check>Contact &amp; hardship letter templates</Check><Check>PDF export</Check></ul>
+          <ul className="mt-6 flex-1 space-y-2.5 text-[15px]"><Check><strong>Your personalised Freedom Plan</strong> with dated steps</Check><Check>Debt-free timeline &amp; monthly milestones</Check><Check>Payoff order &amp; savings targets</Check><Check>Goals tracker</Check><Check>Try <strong>1 what-if scenario</strong> in the simulator</Check><Check>Find Help matching &amp; referral brief</Check><Check>Contact &amp; hardship letter templates</Check><Check>PDF export</Check></ul>
           <div className="mt-6">
             {tier !== "free" ? <Button href="/plan" size="lg" full>Open My Freedom Plan</Button>
               : <Button href="/checkout?tier=premium" size="lg" full>{`Get Premium — ${money(c, c.premiumPrice)}`}</Button>}

@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { FreedomPlan, PlanStep } from "@/lib/freedom";
 import { COUNTRIES, money, type CountryCode } from "@/lib/countries";
 import { Badge, Button, Card, cx } from "./ui";
+import { TodayList } from "./TodayActions";
 
 const SRC: Record<PlanStep["source"], { label: string; tone: "teal" | "navy" | "amber" | "gray" }> = {
   essential: { label: "Do first", tone: "navy" }, "your-choice": { label: "Your choice", tone: "teal" },
@@ -46,7 +47,7 @@ export default function FreedomStages({ plan, planId, initialDone, countryCode }
                   <span className={cx("font-semibold", late ? "text-red-700" : "text-navy-500")}>{late ? "Overdue: " : "By "}{dateText(st.due)}</span>
                   {st.monthly ? <span className="font-semibold text-emerald-700">+{f(st.monthly)}/month</span> : null}
                   {st.oneOff ? <span className="font-semibold text-emerald-700">{f(st.oneOff)} one-off</span> : null}
-                  {st.href && !isDone && <a href={st.href} className="font-semibold text-teal-700 hover:underline">{st.href === "/whatif" ? "Test it in the Simulator →" : "Fix it →"}</a>}
+                  {st.href && !isDone && <a href={st.href} className="font-semibold text-teal-700 hover:underline">{st.href === "/whatif" ? "Test it in Explore my future →" : "Fix it →"}</a>}
                 </span>
               </span>
             </label>
@@ -64,16 +65,18 @@ export default function FreedomStages({ plan, planId, initialDone, countryCode }
           <div>
             <Badge tone="teal">Your Freedom Plan</Badge>
             <p className="mt-3 text-2xl font-bold leading-snug">{s1.needed ? (plan.after.surplus >= 0 ? `Your choices close your ${f(s1.gap)}/month gap. Now follow the steps.` : `First, close your ${f(s1.gap)}/month gap${s1.decideBy ? ` before ${dateText(s1.decideBy)}` : ""}.`) : b.status === "done" ? "You're stable with a buffer. Time to pay debt down faster." : "You're not short each month. Next: build your safety buffer."}</p>
-            <p className="mt-2 max-w-3xl text-navy-100">{plan.hasChoices ? "Built from the choices you picked in the Simulator." : "No Simulator choices yet, so we've suggested the options that close your gap fastest."} Tick steps off as you go; dates are deadlines, not advice.</p>
+            <p className="mt-2 max-w-3xl text-navy-100">{plan.hasChoices ? "Built from the choices you picked in Explore my future." : "You haven't picked any scenarios yet, so we've suggested the options that close your gap fastest."} Tick steps off as you go; dates are deadlines, not advice.</p>
           </div>
           <div className="rounded-2xl bg-white/10 px-5 py-3 text-center"><p className="text-3xl font-bold">{doneCount}/{allSteps.length}</p><p className="text-xs text-navy-200">steps done{saving ? " · saving…" : ""}</p></div>
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-teal-400" style={{ width: `${allSteps.length ? (doneCount / allSteps.length) * 100 : 0}%` }} /></div>
-        <div className="no-print mt-4 flex flex-wrap gap-2"><Button href="/whatif" size="sm" variant="secondary">🧪 {plan.hasChoices ? "Change my choices" : "Choose my moves in the Simulator"}</Button><Button href="/health?edit=1" size="sm" variant="secondary">↻ Update my numbers</Button><Button size="sm" variant="secondary" onClick={() => window.print()}>⬇ Download PDF</Button></div>
+        <div className="no-print mt-4 flex flex-wrap gap-2"><Button href="/whatif" size="sm" variant="secondary">🧪 {plan.hasChoices ? "Change my choices" : "Choose my moves in Explore my future"}</Button><Button href="/health?edit=1" size="sm" variant="secondary">↻ Update my numbers</Button><Button size="sm" variant="secondary" onClick={() => window.print()}>⬇ Download PDF</Button></div>
       </Card>
 
+      <TodayList steps={allSteps} done={done} total={allSteps.length} onToggle={toggle} />
+
       {/* Stage 1 */}
-      <Card as="section" className={cx(s1.needed && !s1Done ? "border-2 border-red-200" : "")}>
+      <Card as="section" id="stage-1" className={cx(s1.needed && !s1Done ? "border-2 border-red-200" : "")}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-xl font-bold">Stage 1 · Stabilise: stop the money running out</h2>
           {s1Done ? <Badge tone="green">{s1.needed ? "Gap closed by your plan" : "Not needed ✓"}</Badge> : <Badge tone="red">Urgent</Badge>}
@@ -84,7 +87,7 @@ export default function FreedomStages({ plan, planId, initialDone, countryCode }
             <div className="rounded-xl bg-navy-50 p-3"><p className="text-xs text-navy-600">Cash runs out</p><p className="text-xl font-bold">{plan.before.runOutDate ? dateText(plan.before.runOutDate) : "—"}</p></div>
             <div className="rounded-xl bg-emerald-50 p-3"><p className="text-xs text-emerald-800">This plan closes</p><p className="text-xl font-bold text-emerald-700">{f(Math.min(covered, s1.gap))}{covered < s1.gap ? ` of ${f(s1.gap)}` : " ✓"}</p></div>
           </div>
-          {covered < s1.gap && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">These steps don&apos;t fully close the gap yet. Try more options in the Simulator, and talk to {c.firstCall.name} about what else is possible.</p>}
+          {covered < s1.gap && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">These steps don&apos;t fully close the gap yet. Try more options in Explore my future, and talk to {c.firstCall.name} about what else is possible.</p>}
           <StepList steps={s1.steps} />
         </>) : <p className="mt-2 text-navy-600">More comes in than goes out each month. Keep it that way.</p>}
       </Card>

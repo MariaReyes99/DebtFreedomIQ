@@ -18,8 +18,10 @@ export type Choices = {
   debts: Record<string, DebtChoice>;     // refinance / extra repayments, by debt id
   add: NewAsset[];                       // buy a property or invest a lump sum
   spendingChange: number;                // + or − per month
+  incomeChange?: number;                 // life events: + or − per month (job loss, pay rise, new baby)
+  lumpSum?: number;                      // life events: one-off money in (+, e.g. inheritance) or out (−, e.g. big repair)
 };
-export const NO_CHOICES: Choices = { props: {}, sellPct: {}, retirementWithdrawal: 0, savingsToUse: 0, releaseTo: "", debts: {}, add: [], spendingChange: 0 };
+export const NO_CHOICES: Choices = { props: {}, sellPct: {}, retirementWithdrawal: 0, savingsToUse: 0, releaseTo: "", debts: {}, add: [], spendingChange: 0, incomeChange: 0, lumpSum: 0 };
 export const isEmpty = (c: Choices) => JSON.stringify({ ...NO_CHOICES, ...c }) === JSON.stringify(NO_CHOICES);
 
 export type PropertyView = { asset: AssetItem; debt: DebtItem | null; use: "home" | "rental" | "other" | undefined; rentIncomes: IncomeItem[] };
@@ -176,6 +178,14 @@ export function applyChoices(base: AssessmentInput, ch: Choices): { input: Asses
     notes.push(`${a.name || "New property"}: bought for ${a.amount} with ${Math.round(deposit)} deposit${loan > 0 ? ` and a ${Math.round(loan)} loan at ${rate}%` : ""}${a.rent ? `, rented for ${a.rent} a month` : ""}.`);
   }
 
+  if (ch.incomeChange) {
+    i.incomes.push({ id: "income-change", source: ch.incomeChange < 0 ? "Income lost" : "Extra income", amount: ch.incomeChange });
+    notes.push(`Monthly income ${ch.incomeChange < 0 ? "falls" : "rises"} by ${Math.abs(ch.incomeChange)}.`);
+  }
+  if (ch.lumpSum) {
+    i.savings = Math.round(i.savings + ch.lumpSum);
+    notes.push(ch.lumpSum > 0 ? `${ch.lumpSum} one-off money added to savings.` : `${-ch.lumpSum} one-off cost paid from savings.`);
+  }
   if (ch.spendingChange) {
     i.expenses.push({ id: "spending-change", category: ch.spendingChange < 0 ? "Spending cut" : "Extra cost", amount: ch.spendingChange, essential: true });
     notes.push(`Monthly spending ${ch.spendingChange < 0 ? "cut" : "increased"} by ${Math.abs(ch.spendingChange)}.`);

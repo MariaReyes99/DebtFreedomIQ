@@ -16,9 +16,9 @@ export function Button({ children, href, onClick, variant = "primary", size = "m
   return href ? (target || /^https?:/.test(href) ? <a href={href} className={cls} target={target} rel={rel}>{children}</a> : <Link href={href} className={cls}>{children}</Link>) : <button type={type} className={cls} disabled={disabled} onClick={onClick}>{children}</button>;
 }
 
-export function Card({ children, className, as: As = "div" }: { children: ReactNode; className?: string; as?: "div" | "section" | "article" }) {
+export function Card({ children, className, as: As = "div", id }: { children: ReactNode; className?: string; as?: "div" | "section" | "article"; id?: string }) {
   const customBg = /(^|\s)(bg-(?!opacity)|from-)/.test(className ?? "");
-  return <As className={cx("rounded-2xl border border-navy-100 p-5 shadow-sm shadow-navy-900/[0.03] sm:p-6", !customBg && "bg-white", className)}>{children}</As>;
+  return <As id={id} className={cx("rounded-2xl border border-navy-100 p-5 shadow-sm shadow-navy-900/[0.03] sm:p-6", !customBg && "bg-white", className)}>{children}</As>;
 }
 
 export function Badge({ children, tone = "teal", className }: { children: ReactNode; tone?: "teal" | "navy" | "amber" | "red" | "green" | "gray"; className?: string }) {

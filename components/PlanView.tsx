@@ -74,7 +74,7 @@ export default function PlanView({ countryCode, plan: initial, editable, hasCons
       ) : (<>
       {/* Summary */}
       <Card className="bg-gradient-to-br from-navy-900 to-navy-800 text-white">
-        <div className="flex flex-wrap items-center gap-2"><Badge tone="teal">{plan.summary.source === "openai" ? "✨ AI-generated plan" : "Freedom Plan"}</Badge>{plan.createdAt && <span className="text-xs text-navy-300">Saved {new Date(plan.createdAt).toLocaleDateString()}</span>}</div>
+        <div className="flex flex-wrap items-center gap-2"><Badge tone="teal">Your personalised plan</Badge>{plan.createdAt && <span className="text-xs text-navy-300">Saved {new Date(plan.createdAt).toLocaleDateString()}</span>}</div>
         <p className="mt-3 text-2xl font-bold leading-snug">{plan.summary.headline}</p>
         <p className="mt-2 max-w-3xl text-navy-100">{plan.summary.why}</p>
         {editable && (

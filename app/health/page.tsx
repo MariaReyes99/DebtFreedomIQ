@@ -26,7 +26,7 @@ export default async function HealthPage({ searchParams }: { searchParams: Promi
           <div className="relative p-6 sm:p-10">
             <Badge tone="teal">Free forever</Badge>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Financial Health Check</h1>
-            <p className="mt-2 max-w-xl text-lg text-navy-100">{showSaved ? "Your scores, cash flow, charts and next steps." : "About 10 minutes. Get your Financial Health score, net worth, debt-to-income ratio and personalised next steps."}</p>
+            <p className="mt-2 max-w-xl text-lg text-navy-100">{showSaved ? "Your scores, cash flow, charts and next steps." : "About 10 minutes. See where you stand, what's good, what needs attention, and what to do next."}</p>
           </div>
         </div>
         {showSaved && latest ? (<>

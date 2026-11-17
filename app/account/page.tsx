@@ -39,7 +39,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
         <Card>
           <h2 className="text-lg font-bold">My Financial Health checks</h2>
           {checks?.length ? (
-            <table className="mt-3 w-full text-left text-sm"><thead><tr className="text-navy-500"><th className="py-2">Date</th><th>Health</th><th>Stress</th><th>Net worth</th></tr></thead>
+            <table className="mt-3 w-full text-left text-sm"><thead><tr className="text-navy-500"><th className="py-2">Date</th><th>Health</th><th>Stress</th><th>Financial position</th></tr></thead>
               <tbody>{checks.map(c => <tr key={c.created_at} className="border-t border-navy-100"><td className="py-2">{new Date(c.created_at).toLocaleDateString()}</td><td>{c.health_score}</td><td>{c.stress_score}</td><td>{c.currency?.toUpperCase()} {Math.round(Number(c.net_worth)).toLocaleString()}</td></tr>)}</tbody></table>
           ) : <p className="mt-2 text-sm text-navy-500">No checks saved yet.</p>}
           <Button href="/health" size="sm" className="mt-4">Do a new check</Button>

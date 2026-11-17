@@ -33,3 +33,6 @@ input, select, textarea { @apply w-full rounded-xl border border-navy-200 bg-whi
 input[type="checkbox"] { @apply h-5 w-5 rounded border-navy-300 accent-teal-600 p-0; width: 1.25rem; }
 label { @apply text-sm font-semibold text-navy-800; }
 @media print { header, footer, .no-print { display: none !important; } body { background: #fff; } }
+
+/* Larger text, chosen with the "AA" button (remembered per device) */
+html.large-text { font-size: 118.75%; }

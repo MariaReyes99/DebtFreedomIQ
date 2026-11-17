@@ -12,7 +12,15 @@ import { Button, Card, cx } from "./ui";
 
 type Result = { metrics: Metrics; advice: Advice; help: { category: HelpCategory; why: string }[]; saved: boolean; assessmentId?: string | null };
 const PENDING = "dfiq_pending_assessment";
-const STEPS = ["Income", "Expenses", "Debts", "Assets & savings", "Your situation"] as const;
+const STEPS = ["Money coming in", "Money going out", "Money you owe", "Things you own", "Your situation"] as const;
+// Interview-style intro for each step: one thing at a time
+const ASK = [
+  "Let's start simple: what money comes in each month?",
+  "Now, what goes out each month? Rough figures are fine.",
+  "Who do you owe money to? Skip this if you don't owe anything.",
+  "What do you own, and do you have any savings? Skip anything you're not sure about.",
+  "Last step: is any of this happening to you? It helps us point you to the right help.",
+];
 const DEBT_TYPES: [DebtType, string][] = [["mortgage", "Mortgage / home loan"], ["credit_card", "Credit card"], ["personal_loan", "Personal loan"], ["car_loan", "Car loan"], ["bnpl", "Buy now pay later"], ["student_loan", "Student loan"], ["medical", "Medical / hospital bill"], ["tax", "Tax debt"], ["child_support", "Child support arrears"], ["business", "Business debt"], ["family", "Family / friends"], ["other", "Other"]];
 const ASSET_TYPES: [AssetType, string][] = [["property", "Property"], ["vehicle", "Vehicle"], ["investments", "Investments / shares"], ["retirement", "Retirement / KiwiSaver / super"], ["business", "Business"], ["other", "Other"]];
 const SITUATION: [keyof AssessmentInput["situation"], string][] = [
@@ -130,7 +138,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
           </div>
 
           <form className="space-y-4 p-4 sm:p-6" onSubmit={e => { e.preventDefault(); if (step < STEPS.length - 1) setStep(step + 1); else submit({ ...data, country: c.code }); }}>
-            <h2 className="text-xl font-bold">{step + 1}. {STEPS[step]}</h2>
+            <div><p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Step {step + 1} of {STEPS.length}</p><h2 className="text-xl font-bold">{STEPS[step]}</h2><p className="mt-1 text-navy-700">{ASK[step]}</p></div>
 
             {step === 0 && (<>
               <p className="text-sm text-navy-600">Take-home pay after tax, plus benefits, child support, rental income and anything else. Paid fortnightly? Multiply by 2.17. Weekly? Multiply by 4.33.</p>
@@ -172,9 +180,9 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
                 <div key={x.id} className={cx(row, "sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_100px_1fr_auto]")}>
                   <div><label htmlFor={`dn${i}`} className="text-xs">Name</label><input id={`dn${i}`} value={x.name} placeholder="e.g. Visa card" onChange={e => { const v = e.target.value; upd("debts", i, { name: v, ...(/house|home|mortgage|property/i.test(v) && x.type === "credit_card" ? { type: "mortgage" as DebtType } : {}) }); }} className="mt-1" /></div>
                   <div><label htmlFor={`dt${i}`} className="text-xs">Type</label><select id={`dt${i}`} value={x.type} onChange={e => upd("debts", i, { type: e.target.value as DebtType })} className="mt-1">{DEBT_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-                  {money("Balance owed", x.balance, v => upd("debts", i, { balance: v }), `db${i}`)}
-                  <div><label htmlFor={`dr${i}`} className="text-xs">Interest % / yr</label><input id={`dr${i}`} inputMode="decimal" value={x.rate || ""} placeholder="0" onChange={e => upd("debts", i, { rate: num(e.target.value) })} className="mt-1" /></div>
-                  {money("Min. payment / month", x.minPayment, v => upd("debts", i, { minPayment: v }), `dm${i}`)}
+                  {money("How much you owe", x.balance, v => upd("debts", i, { balance: v }), `db${i}`)}
+                  <div><label htmlFor={`dr${i}`} className="text-xs">Interest rate (% a year)</label><input id={`dr${i}`} inputMode="decimal" value={x.rate || ""} placeholder="0" onChange={e => upd("debts", i, { rate: num(e.target.value) })} className="mt-1" /></div>
+                  {money("Repayment / month", x.minPayment, v => upd("debts", i, { minPayment: v }), `dm${i}`)}
                   {del("debts", i, x.name)}
                 </div>
               ))}
@@ -182,7 +190,7 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
             </>)}
 
             {step === 3 && (<>
-              <div className="max-w-xs">{money("Cash savings / emergency fund", data.savings, v => setData(d => ({ ...d, savings: v })), "savings")}</div>
+              <div className="max-w-xs">{money("Savings in the bank", data.savings, v => setData(d => ({ ...d, savings: v })), "savings")}</div>
               <p className="text-sm text-navy-600">Other assets: property (today&apos;s value), vehicles, investments, retirement savings, business. Skip if none.</p>
               {data.debts.some(d => d.type === "mortgage" && d.balance > 0) && !data.assets.some(a => a.type === "property") && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">🏠 You have a home loan. Add the property&apos;s current value below, so your net worth is correct.</p>}
               {data.assets.map((x, i) => (
@@ -220,10 +228,10 @@ export default function HealthWizard({ countryCode, detected, loggedIn, isPremiu
               </div>
               <div><label htmlFor="goals">Your goals <span className="font-normal text-navy-500">(optional)</span></label><textarea id="goals" rows={3} maxLength={600} value={data.goals} onChange={e => setData(d => ({ ...d, goals: e.target.value }))} placeholder={`e.g. Clear my credit card this year, save a ${fmtMoney(c, c.code === "PH" ? 100000 : 5000)} buffer, pay the mortgage off faster`} className="mt-1.5" /></div>
               <div className="grid grid-cols-2 gap-2 rounded-xl bg-navy-50 p-4 text-sm sm:grid-cols-4">
-                <div><p className="text-navy-500">Income</p><p className="font-bold">{sym}{totals.income.toLocaleString()}/mo</p></div>
-                <div><p className="text-navy-500">Living costs</p><p className="font-bold">{sym}{totals.expenses.toLocaleString()}/mo</p></div>
-                <div><p className="text-navy-500">Debts</p><p className="font-bold">{sym}{totals.debts.toLocaleString()}</p></div>
-                <div><p className="text-navy-500">Assets & savings</p><p className="font-bold">{sym}{totals.assets.toLocaleString()}</p></div>
+                <div><p className="text-navy-500">Coming in</p><p className="font-bold">{sym}{totals.income.toLocaleString()}/mo</p></div>
+                <div><p className="text-navy-500">Going out</p><p className="font-bold">{sym}{totals.expenses.toLocaleString()}/mo</p></div>
+                <div><p className="text-navy-500">You owe</p><p className="font-bold">{sym}{totals.debts.toLocaleString()}</p></div>
+                <div><p className="text-navy-500">You own (incl. savings)</p><p className="font-bold">{sym}{totals.assets.toLocaleString()}</p></div>
               </div>
             </>)}
 

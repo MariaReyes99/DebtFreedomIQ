@@ -12,7 +12,7 @@ export default function Footer() {
           <Disclaimer className="mt-4 max-w-md !text-navy-300" />
         </div>
         <nav aria-label="Product" className="text-sm"><p className="mb-2 font-semibold text-white">Product</p>
-          <ul className="space-y-1.5"><li><Link href="/health" className="hover:text-white">Financial Health (free)</Link></li><li><Link href="/help" className="hover:text-white">Find Help</Link></li><li><Link href="/plan" className="hover:text-white">My Freedom Plan</Link></li><li><Link href="/whatif" className="hover:text-white">Financial Simulator</Link></li><li><Link href="/pricing" className="hover:text-white">Pricing</Link></li></ul></nav>
+          <ul className="space-y-1.5"><li><Link href="/health" className="hover:text-white">Financial Health (free)</Link></li><li><Link href="/help" className="hover:text-white">Find Help</Link></li><li><Link href="/plan" className="hover:text-white">My Freedom Plan</Link></li><li><Link href="/whatif" className="hover:text-white">Explore my future</Link></li><li><Link href="/pricing" className="hover:text-white">Pricing</Link></li></ul></nav>
         <nav aria-label="Company" className="text-sm"><p className="mb-2 font-semibold text-white">Company</p>
           <ul className="space-y-1.5"><li><Link href="/privacy" className="hover:text-white">Privacy</Link></li><li><Link href="/terms" className="hover:text-white">Terms</Link></li></ul>
           <p className="mt-4 text-xs text-navy-400">Not affiliated with or endorsed by any organisation listed in our directory.</p></nav>

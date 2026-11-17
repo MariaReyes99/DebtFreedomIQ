@@ -134,9 +134,9 @@ export function buildSolutions(i: AssessmentInput, m: Metrics, c: Country, fmt: 
         r.cleared.length ? `Selling them could ${r.cleared.join(", then ")}${r.left > 0 ? `, leaving ${fmt(round(r.left, 1000))}` : ""}.` : "",
         `Repayments fall in proportion if the lender recalculates them.`,
         months !== null ? `Or keep them as a safety net: they would cover your ${fmt(gap)}/month shortfall for about ${months >= 24 ? `${Math.floor(months / 12)} years` : `${Math.round(months)} months`} while you fix it.` : "",
-        `You can sell part rather than all: try different amounts in the Simulator.`,
+        `You can sell part rather than all: try different amounts in Explore my future.`,
       ].filter(Boolean).join(" "),
-      caution: `Check tax${c.code === "NZ" ? " (e.g. FIF rules on overseas shares)" : c.code === "AU" || c.code === "GB" || c.code === "US" ? " (capital gains tax)" : ""}, selling fees and timing; avoid selling everything after a market fall. Investments usually grow faster than a mortgage costs over the long run, so compare in the Simulator before deciding.` });
+      caution: `Check tax${c.code === "NZ" ? " (e.g. FIF rules on overseas shares)" : c.code === "AU" || c.code === "GB" || c.code === "US" ? " (capital gains tax)" : ""}, selling fees and timing; avoid selling everything after a market fall. Investments usually grow faster than a mortgage costs over the long run, so compare in Explore my future before deciding.` });
   }
   if (valTotal > 0 && gap > 0) {
     const realistic = round(valTotal * 0.6, 1000); // resale is usually well below insured/retail value

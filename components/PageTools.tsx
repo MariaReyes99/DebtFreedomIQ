@@ -40,7 +40,7 @@ export function ScrollButtons() {
   if (!long) return null;
   const btn = "flex h-11 w-11 items-center justify-center rounded-full bg-navy-900 text-lg text-white shadow-lg ring-2 ring-white hover:bg-teal-600 focus-visible:outline-none focus-visible:ring-teal-400";
   return (
-    <div className="no-print fixed bottom-5 right-5 z-40 flex flex-col gap-2">
+    <div className="no-print fixed bottom-24 right-4 z-40 flex flex-col gap-2 lg:bottom-5 lg:right-5">
       {!nearTop && <button type="button" aria-label="Go to top of page" title="Go to top" className={btn} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>↑</button>}
       {!nearBottom && <button type="button" aria-label="Go to bottom of page" title="Go to bottom" className={btn} onClick={() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" })}>↓</button>}
     </div>

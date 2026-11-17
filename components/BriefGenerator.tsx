@@ -18,8 +18,8 @@ export default function BriefGenerator({ initial }: { initial: Brief }) {
           setErr("");
           const r = await fetch("/api/help/brief", { method: "POST" });
           const j = await r.json(); if (!r.ok) { setErr(j.error); return; } setB(j);
-        })} disabled={pending}>{pending ? "Generating…" : "✨ Generate my AI referral brief"}</Button>
-        <Badge tone={b.source === "openai" ? "teal" : "gray"}>{b.source === "openai" ? "AI-generated" : "Standard brief"}</Badge>
+        })} disabled={pending}>{pending ? "Generating…" : "Write my referral brief"}</Button>
+        <Badge tone={b.source === "openai" ? "teal" : "gray"}>{b.source === "openai" ? "Personalised brief" : "Standard brief"}</Badge>
         {err && <span role="alert" className="text-sm text-red-600">{err}</span>}
       </div>
       <div className="grid gap-4 md:grid-cols-2">

@@ -28,7 +28,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(19,167,150,0.35),transparent_55%)]" aria-hidden />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:py-24">
           <div>
-            <Badge tone="teal">AI-powered financial decisions</Badge>
+            <Badge tone="teal">Step-by-step financial guidance</Badge>
             <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">From financial stress to <span className="text-teal-300">financial freedom.</span></h1>
             <p className="mt-5 max-w-xl text-lg text-navy-100"><strong className="text-white">See the result of every move before you make it.</strong> Start with your free Financial Health check, then test your options: sell or keep, refinance, use savings, and see your debts, net worth and retirement change.</p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -39,7 +39,7 @@ export default async function Home() {
               </Link>
               <Link href="/whatif" className="group rounded-2xl bg-white/10 p-4 text-white ring-1 ring-white/20 hover:bg-white/15">
                 <p className="text-sm font-semibold text-navy-200">I want to plan my next move</p>
-                <p className="mt-1 text-lg font-bold">Try the Financial Simulator →</p>
+                <p className="mt-1 text-lg font-bold">Explore my future →</p>
                 <p className="mt-1 text-xs text-navy-200">Property, debt, savings &amp; retirement in one model</p>
               </Link>
             </div>
@@ -51,7 +51,7 @@ export default async function Home() {
             </div>
             <Card className="absolute -bottom-8 left-4 right-4 flex items-center gap-4 text-navy-900 sm:left-auto sm:right-6 sm:w-80">
               <ScoreRing value={demo.healthScore} label="Health score" sub={demo.healthBand} size={96} />
-              <div className="text-sm"><p className="text-navy-500">Example family</p><p className="font-bold">Net worth {money(c, demo.netWorth)}</p><p className="text-navy-600">Debt-to-income {(demo.debtToIncome * 100).toFixed(0)}%</p></div>
+              <div className="text-sm"><p className="text-navy-500">Example family</p><p className="font-bold">Financial position {money(c, demo.netWorth)}</p><p className="text-navy-600">Debt load {(demo.debtToIncome * 100).toFixed(0)}% of income</p></div>
             </Card>
           </div>
         </div>
