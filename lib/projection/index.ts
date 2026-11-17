@@ -7,6 +7,7 @@ export type LongView = {
   retirement: { age: number; netWorth: number; liquid: number };
   moneyRunsOutAge: number | null;
   chanceLasts: number;   // share of simulated markets where spending is always covered
+  series: { age: number; netWorth: number; liquid: number }[]; // expected case, yearly
 };
 
 /** 10-year and retirement picture (expected returns, today's money) using the Library's engine. */
@@ -21,6 +22,7 @@ export function longView(i: AssessmentInput, ages: { age: number; retireAge?: nu
       retirement: { age: pr.age, netWorth: Math.round(pr.netWorth), liquid: Math.round(pr.liquid) },
       moneyRunsOutAge: r.scenarios[1].shortfallAge,
       chanceLasts: r.monteCarlo.successRate,
+      series: exp.map(p => ({ age: p.age, netWorth: Math.round(p.netWorth), liquid: Math.round(p.liquid) })),
     };
   } catch (e) {
     console.error("[longView]", (e as Error).message);

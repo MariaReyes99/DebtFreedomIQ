@@ -22,14 +22,15 @@ export default function CashRunway({ income, living, debt, savings, symbol, fmt 
         </div>
       </div>
 
-      <div className={cx("mt-4 rounded-xl p-4", runOut === null ? "bg-emerald-50 text-emerald-900" : urgent ? "bg-red-600 text-white" : "bg-amber-50 text-amber-900")} role={runOut !== null ? "alert" : undefined}>
+      <div className={cx("mt-4 rounded-xl p-4", runOut === null ? "bg-emerald-50 text-emerald-900" : urgent ? "border-2 border-amber-400 bg-amber-50 text-amber-950" : "bg-amber-50 text-amber-900")} role={runOut !== null ? "alert" : undefined}>
         {runOut === null ? (
           <p><strong>You&apos;re not running out of cash.</strong> At this rate you add about {fmt(surplus)} a month to your savings.</p>
         ) : savings <= 0 ? (
           <p><strong>You&apos;re already short {fmt(-surplus)} every month with no savings to cover it.</strong> Act now: call your bank and a free financial mentor this week.</p>
         ) : (
           <>
-            <p className="text-lg font-bold">At this rate your {fmt(savings)} savings run out in about {runOut < 1 ? `${Math.max(1, Math.round(runOut * 4.3))} week${Math.round(runOut * 4.3) === 1 ? "" : "s"}` : `${runOut.toFixed(1)} months`}: around {dateText(addMonths(runOut))}.</p>
+            <p className="text-sm font-bold uppercase tracking-wide">Action needed soon</p>
+            <p className="text-lg font-bold">At your current spending, your {fmt(savings)} savings may last about {runOut < 1 ? `${Math.max(1, Math.round(runOut * 4.3))} week${Math.round(runOut * 4.3) === 1 ? "" : "s"}` : `${runOut.toFixed(1)} months`}, until around {dateText(addMonths(runOut))}.</p>
             <p className="mt-1 text-sm">You&apos;re short {fmt(-surplus)} every month. <strong>{urgent ? "Take action this week" : `Take action by ${dateText(actBy!)}`}</strong>: talk to your bank about your mortgage and to a free financial mentor before the money is gone. Banks have more options while you&apos;re still up to date.</p>
           </>
         )}

@@ -7,12 +7,13 @@ import { Button, Card, Disclaimer, PageHeader, PremiumGate } from "@/components/
 
 export const metadata = { title: "Explore my future" };
 
-export default async function WhatIfPage() {
+export default async function WhatIfPage({ searchParams }: { searchParams: Promise<{ try?: string }> }) {
+  const { try: tryFirst } = await searchParams;
   const { user, isPremium, tier, country, displayCountry } = await getSession();
   const latest = user ? await loadLatest(user.id) : null;
   const c = country ?? displayCountry;
   await track("premium_view", { userId: user?.id, country: c.code, props: { page: "whatif", premium: isPremium } });
-  const header = <PageHeader eyebrow="Premium" title="Explore my future">See the result of every move before you make it: sell, buy, refinance or use savings, and see your cash flow, debts, net worth and retirement change. Uses the numbers from your Financial Health check, so there&apos;s nothing to re-enter.</PageHeader>;
+  const header = <PageHeader eyebrow="Premium" title="Explore my future">See where each move takes you, before you make it. Uses your Financial Health numbers: nothing to re-enter.</PageHeader>;
 
   if (!isPremium) return (
     <div className="mx-auto max-w-7xl px-4 py-10">{header}
@@ -29,7 +30,7 @@ export default async function WhatIfPage() {
   const cc = toCountryCode(latest.input.country) ?? DEFAULT_COUNTRY;
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">{header}
-      <WhatIfLab input={latest.input} countryCode={cc} plus={tier === "premium_plus"} />
+      <WhatIfLab input={latest.input} countryCode={cc} plus={tier === "premium_plus"} tryFirst={tryFirst} />
       <Disclaimer className="mt-6" />
       <p className="mt-2 text-xs text-navy-500">Currency: {COUNTRIES[cc].currency.toUpperCase()}. Figures are estimates from the numbers you entered.</p>
     </div>

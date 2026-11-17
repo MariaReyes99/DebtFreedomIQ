@@ -99,6 +99,13 @@ export const COUNTRIES: Record<CountryCode, Country> = {
         { name: "DSWD – AICS", what: "Crisis assistance and guarantee letters; visit a Crisis Intervention Unit or Field Office", url: "https://www.dswd.gov.ph" },
         { name: "Public Attorney's Office (PAO)", what: "Free legal help if you can't afford a lawyer (eligibility applies)", phone: "(02) 8929-9436", url: "https://www.pao.gov.ph" },
       ]},
+      { title: "Lost your job or income", items: [
+        { name: "SSS – Unemployment benefit", what: "Cash benefit if you were involuntarily separated (apply through My.SSS)", phone: "1455", url: "https://www.sss.gov.ph" },
+        { name: "DOLE – TUPAD & displaced-worker help", what: "Emergency employment and assistance for displaced workers", phone: "1349", url: "https://www.dole.gov.ph" },
+      ]},
+      { title: "Housing loan help", items: [
+        { name: "Pag-IBIG Fund", what: "Housing loan restructuring and payment help; calamity loans", phone: "(02) 8724-4244", url: "https://www.pagibigfund.gov.ph" },
+      ]},
       { title: "Complaints about lenders & collectors", items: [
         { name: "Bangko Sentral ng Pilipinas (BSP)", what: "Banks and credit cards — complain to the bank first, then BSP", phone: "(02) 5306-2584", email: "consumeraffairs@bsp.gov.ph", url: "https://www.bsp.gov.ph" },
         { name: "SEC Philippines", what: "Online lending apps, lending & financing companies, harassment by collectors", phone: "(02) 8818-5990", email: "flcd_complaints@sec.gov.ph", url: "https://www.sec.gov.ph" },
@@ -147,6 +154,10 @@ export const COUNTRIES: Record<CountryCode, Country> = {
       { title: "Government benefits", items: [
         { name: "USA.gov – Benefits", what: "Find government benefits you may qualify for", url: "https://www.usa.gov/benefits" },
         { name: "SNAP (food benefits)", what: "Monthly food assistance through your state", url: "https://www.fns.usda.gov/snap" },
+        { name: "Unemployment insurance (CareerOneStop)", what: "Find how to file for unemployment benefits in the state where you worked", phone: "1-877-872-5627", url: "https://www.careeronestop.org/LocalHelp/UnemploymentBenefits/Find-Unemployment-Benefits.aspx" },
+      ]},
+      { title: "Mortgage & foreclosure help", items: [
+        { name: "HUD-approved housing counselors", what: "Free foreclosure-prevention counseling; they can talk to your lender with you", phone: "800-569-4287", url: "https://www.hud.gov/findacounselor" },
       ]},
       { title: "Food, housing & everyday needs", items: [
         { name: "211", what: "Local rent, utility, food and shelter help", phone: "211", url: "https://www.211.org" },
@@ -202,6 +213,10 @@ export const COUNTRIES: Record<CountryCode, Country> = {
         { name: "The Salvation Army", what: "Emergency relief", phone: "13 72 58", url: "https://www.salvationarmy.org.au" },
         { name: "St Vincent de Paul", what: "Emergency relief", phone: "13 18 12", url: "https://www.vinnies.org.au" },
       ]},
+      { title: "Legal help", items: [
+        { name: "Legal Aid (your state or territory)", what: "Free legal help if you qualify. NSW 1300 888 529 · VIC 1300 792 387 · QLD 1300 651 188 · WA 1300 650 579 · SA 1300 366 424 · TAS 1300 366 611 · ACT 1300 654 314 · NT 1800 019 343", url: "https://www.nla.aust.legal" },
+        { name: "Community Legal Centres", what: "Free local legal help, including debt, credit and tenancy", url: "https://clcs.org.au/legal-help" },
+      ]},
       { title: "Complaints", items: [
         { name: "Australian Financial Complaints Authority (AFCA)", what: "Free complaints about banks, lenders and debt collectors", phone: "1800 931 678", url: "https://www.afca.org.au" },
       ]},
@@ -246,7 +261,12 @@ export const COUNTRIES: Record<CountryCode, Country> = {
         { name: "MoneyHelper", what: "Free government-backed money guidance", phone: "0800 138 7777", url: "https://www.moneyhelper.org.uk" },
       ]},
       { title: "Benefits & grants", items: [
+        { name: "Universal Credit (GOV.UK)", what: "Main benefit if you're out of work or on a low income; apply online", phone: "0800 328 5644", url: "https://www.gov.uk/universal-credit" },
         { name: "Turn2us", what: "Benefits calculator and grants search", phone: "0808 802 2000", url: "https://www.turn2us.org.uk" },
+      ]},
+      { title: "Legal help", items: [
+        { name: "Civil Legal Advice (CLA)", what: "Free legal advice if you qualify for legal aid: debt if your home is at risk, housing, eviction (England & Wales)", phone: "0345 345 4345", url: "https://www.gov.uk/civil-legal-advice" },
+        { name: "Law Centres Network", what: "Find a free local law centre", url: "https://www.lawcentres.org.uk" },
       ]},
       { title: "Food, housing & everyday needs", items: [
         { name: "Trussell – Help through Hardship", what: "Benefits checks, income advice and food bank referral", phone: "0808 208 2138", url: "https://www.trussell.org.uk" },

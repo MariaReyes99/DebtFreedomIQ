@@ -146,9 +146,9 @@ export function buildSolutions(i: AssessmentInput, m: Metrics, c: Country, fmt: 
     const r = useCash(investTotal);
     const months = gap > 0 ? investTotal / gap : null;
     out.push({ id: "sell-investments", kind: "asset", monthly: r.monthly, oneOff: investTotal,
-      title: `Use your investments (${fmt(investTotal)}) to pay down debt: about ${fmt(r.monthly)}/month less in repayments`,
+      title: `Your investments could ease the pressure: about ${fmt(r.monthly)}/month less in repayments`,
       detail: [
-        `${invest.map(a => `${a.name} ${fmt(a.value)}`).join(", ")}.`,
+        `You have ${fmt(investTotal)} in investments. Selling some (not necessarily all) could reduce what you owe.`,
         r.cleared.length ? `Selling them could ${r.cleared.join(", then ")}${r.left > 0 ? `, leaving ${fmt(round(r.left, 1000))}` : ""}.` : "",
         `Repayments fall in proportion if the lender recalculates them.`,
         months !== null ? `Or keep them as a safety net: they would cover your ${fmt(gap)}/month shortfall for about ${months >= 24 ? `${Math.floor(months / 12)} years` : `${Math.round(months)} months`} while you fix it.` : "",

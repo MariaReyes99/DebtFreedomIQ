@@ -8,7 +8,6 @@ import { fmtMonths } from "@/lib/plan";
 import type { Goal } from "@/lib/types";
 import type { ScenarioResult } from "@/lib/plan";
 import { ScoreHistory } from "@/components/charts";
-import NextSteps from "@/components/NextSteps";
 import CashRunway from "@/components/CashRunway";
 import PendingCheckSaver from "@/components/PendingCheckSaver";
 import TodayActions from "@/components/TodayActions";
@@ -73,6 +72,16 @@ export default async function Dashboard() {
 
   const fp = isPremium && plan && !latest.incomplete ? buildFreedomPlan(latest.input, (plan.choices ?? null) as Choices | null, c, f) : null;
   const firstStep = latest.advice.nextSteps[0];
+  const doneIds = ((plan?.steps_done ?? []) as string[]);
+  const planSteps = fp ? [...fp.stabilise.steps, ...fp.buffer.steps] : [];
+  const wins = [
+    { label: "Completed your Financial Health check", done: true },
+    ...(history && history.length > 1 ? [{ label: `Updated your numbers ${history.length - 1} time${history.length > 2 ? "s" : ""}`, done: true }] : []),
+    ...(plan ? [{ label: "Made your Freedom Plan", done: true }] : []),
+    ...planSteps.filter(st => doneIds.includes(st.id)).map(st => ({ label: st.title, done: true })),
+    ...latest.advice.nextSteps.filter((_, k) => latest.completedSteps.includes(k)).map(t => ({ label: t, done: true })),
+    ...(fp ? planSteps.filter(st => !doneIds.includes(st.id)).slice(0, 2) : latest.advice.nextSteps.filter((_, k) => !latest.completedSteps.includes(k)).slice(0, 2).map(t => ({ title: t }))).map(st => ({ label: (st as { title: string }).title, done: false })),
+  ];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
@@ -84,61 +93,76 @@ export default async function Dashboard() {
       {fp ? <div className="mb-6"><TodayActions steps={[...fp.stabilise.steps, ...fp.buffer.steps]} planId={plan!.id} initialDone={(plan!.steps_done ?? []) as string[]} /></div>
         : <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 border-teal-300 bg-teal-50"><div><p className="text-sm font-semibold uppercase tracking-wide text-teal-700">Next recommended action</p><p className="mt-1 text-lg font-bold">{m.monthlySurplus < 0 ? `Close your ${f(-m.monthlySurplus)}/month gap` : firstStep ?? "Make your step-by-step plan"}</p>{m.monthlySurplus < 0 && firstStep && <p className="text-sm text-navy-700">Start with: {firstStep}</p>}</div><Button href={isPremium ? "/plan" : "/pricing"}>{isPremium ? "Make my plan" : "Get my step-by-step plan"}</Button></Card>}
 
-      <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
-        <Card className="flex items-center justify-center gap-8">
-          <ScoreRing value={m.healthScore} label="Financial Health" sub={m.healthBand} />
-          <ScoreRing value={m.stressScore} label="Stress" sub={m.stressBand} invert />
-        </Card>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label="Your financial position" value={f(m.netWorth)} tone={m.netWorth >= 0 ? "good" : "bad"} sub={`${f(m.totalAssets)} owned − ${f(m.totalDebts)} owed`} />
-          <StatCard label="Debt load" value={`${(m.debtToIncome * 100).toFixed(0)}%`} tone={m.debtToIncome <= 0.36 ? "good" : "bad"} sub="of income on repayments · healthy below 36%" />
-          <StatCard label="Monthly surplus" value={f(m.monthlySurplus)} tone={m.monthlySurplus >= 0 ? "good" : "bad"} />
-          <StatCard label="Safety savings" value={`${m.emergencyMonths.toFixed(1)} months`} tone={m.emergencyMonths >= 3 && m.monthlySurplus >= 0 ? "good" : "warn"} sub="of essential costs · aim for 3–6" />
-          <Card className="col-span-2 md:col-span-4">
-            <p className="text-sm text-navy-600"><strong>What you own (in this check):</strong> {[...latest.input.assets.filter(x => x.value > 0).map(x => `${x.name} ${f(x.value)}`), ...(latest.input.savings > 0 ? [`Savings ${f(latest.input.savings)}`] : [])].join(" · ") || "nothing entered"}. Missing something? <a href="/health?edit=1" className="font-semibold text-teal-700">Edit my answers</a>, then click &ldquo;See my Financial Health&rdquo; to save.</p>
-          </Card>
-          <Card className="col-span-2 md:col-span-4">
-            <p className="text-sm text-navy-500">{delta === null ? "Do another check next month to start tracking your progress." : delta === 0 ? "Your health score is the same as your first check." : delta > 0 ? `📈 Your health score is up ${delta} points since your first check.` : `Your health score is down ${-delta} points since your first check. Let's look at why.`}</p>
-          </Card>
-        </div>
-      </div>
-
-      <div className="mt-6"><CashRunway income={m.monthlyIncome} living={m.monthlyExpenses} debt={m.monthlyDebtPayments} savings={latest.input.savings} symbol={c.symbol} fmt={f} /></div>
-
-      <Card as="section" className="mt-6 border-teal-200 bg-teal-50/60">
-        <NextSteps steps={latest.advice.nextSteps} assessmentId={latest.id} initialDone={latest.completedSteps} loggedIn />
-      </Card>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      {/* Where you are, in words, and your plan */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card as="section">
-          <h2 className="text-lg font-bold">Your progress</h2>
-          {history && history.length > 1
-            ? <ScoreHistory data={history.map(h => ({ date: new Date(h.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }), health: h.health_score ?? 0, stress: h.stress_score ?? 0 }))} />
-            : <p className="mt-2 text-sm text-navy-500">Your score history appears here after your second check.</p>}
+          <p className="text-xs font-bold uppercase tracking-wide text-navy-500">Current situation</p>
+          <p className="mt-1 text-2xl font-bold">{m.healthScore < 25 ? "Needs attention now" : m.healthScore < 40 || m.monthlySurplus < 0 ? "Needs attention soon" : m.healthScore < 70 ? "Getting there" : "In good shape"}</p>
+          <p className="mt-1 text-navy-700">{latest.advice.recommendations.filter(r => r.impact === "high").length || latest.advice.recommendations.length} high-priority actions identified{m.monthlySurplus < 0 ? `, starting with closing your ${f(-m.monthlySurplus)}/month gap` : ""}.</p>
+          <Link href="/health" className="mt-3 inline-block text-sm font-semibold text-teal-700">See what&apos;s good and what needs attention →</Link>
         </Card>
-        <Card as="section">
-          <h2 className="text-lg font-bold">Top recommendations</h2>
-          <ol className="mt-3 space-y-2">{latest.advice.recommendations.slice(0, 3).map((r, i) => <li key={i} className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-500 text-xs font-bold text-white">{i + 1}</span><span><strong>{r.title}</strong><br /><span className="text-sm text-navy-600">{r.detail}</span></span></li>)}</ol>
-          <Link href="/health" className="mt-3 inline-block text-sm font-semibold text-teal-700">See full results →</Link>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Card as="section">
-          <h2 className="text-lg font-bold">My Freedom Plan</h2>
-          {plan && sc ? (<>
+        <Card as="section" className="border-teal-200">
+          <h2 className="text-lg font-bold">🎯 My Freedom Plan</h2>
+          {plan && fp ? (<>
+            <p className="mt-2 text-navy-700">{fp.stabilise.needed && fp.after.surplus < 0 ? `Stage 1: closing your ${f(fp.stabilise.gap)}/month gap.` : fp.buffer.status !== "done" ? "Stage 2: building your safety savings." : "Stage 3: paying debt down."}</p>
+            <Button href="/plan" size="sm" className="mt-3">Open my plan</Button>
+          </>) : plan && sc ? (<>
             <p className="mt-2 text-navy-700">{plan.ai_summary.headline}</p>
             <p className="mt-2 text-sm text-navy-500">{sc.label} plan · consumer debt-free in <strong>{fmtMonths(sc.consumerDebtFreeMonth)}</strong></p>
-            <Button href="/plan" variant="secondary" size="sm" className="mt-3">Open plan</Button>
-          </>) : isPremium ? (<><p className="mt-2 text-navy-600">You haven&apos;t generated your plan yet.</p><Button href="/plan" size="sm" className="mt-3">Generate my plan</Button></>)
-            : (<><p className="mt-2 text-navy-600">See when you could be debt-free with three scenarios, milestones and a PDF.</p><Button href="/plan" size="sm" className="mt-3">Preview my plan</Button></>)}
+            <Button href="/plan" size="sm" className="mt-3">Open my plan</Button>
+          </>) : isPremium ? (<><p className="mt-2 text-navy-600">Turn your results into dated steps you can tick off.</p><Button href="/plan" size="sm" className="mt-3">Make my plan</Button></>)
+            : (<><p className="mt-2 text-navy-600">Dated steps you can tick off: stabilise, build a buffer, then pay down debt.</p><Button href="/pricing" size="sm" className="mt-3">Get my step-by-step plan</Button></>)}
+        </Card>
+      </div>
+
+      {/* Your wins: what's done, and what's next */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card as="section">
+          <h2 className="text-lg font-bold">🏆 Your wins</h2>
+          <ul className="mt-3 space-y-2">
+            {wins.map(w => <li key={w.label} className="flex items-start gap-2"><span aria-hidden className={w.done ? "text-emerald-600" : "text-navy-300"}>{w.done ? "✓" : "□"}</span><span className={w.done ? "font-semibold" : "text-navy-600"}>{w.label}</span></li>)}
+          </ul>
         </Card>
         <Card as="section">
           <h2 className="text-lg font-bold">Goals</h2>
           {(plan?.goals as Goal[] | undefined)?.length ? (
             <ul className="mt-3 space-y-3">{(plan!.goals as Goal[]).slice(0, 4).map(g => { const p = g.target ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0; return (
               <li key={g.id}><div className="flex justify-between text-sm"><span className="font-semibold">{g.title}</span><span>{p}%</span></div><div className="mt-1 h-2 rounded-full bg-navy-100" role="progressbar" aria-valuenow={p} aria-valuemin={0} aria-valuemax={100} aria-label={g.title}><div className="h-full rounded-full bg-teal-500" style={{ width: `${p}%` }} /></div></li>); })}</ul>
-          ) : <p className="mt-2 text-sm text-navy-500">Goals appear here once you create your Freedom Plan.</p>}
+          ) : <p className="mt-2 text-sm text-navy-500">Goals appear here once you make your Freedom Plan.</p>}
+        </Card>
+      </div>
+
+      <div className="mt-6"><CashRunway income={m.monthlyIncome} living={m.monthlyExpenses} debt={m.monthlyDebtPayments} savings={latest.input.savings} symbol={c.symbol} fmt={f} /></div>
+
+      {/* The numbers, after the actions */}
+      <h2 className="mb-3 mt-8 text-lg font-bold">Your numbers</h2>
+      <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard label="Your financial position" value={f(m.netWorth)} tone={m.netWorth >= 0 ? "good" : "bad"} sub={`${f(m.totalAssets)} owned − ${f(m.totalDebts)} owed`} />
+          <StatCard label="Debt load" value={`${(m.debtToIncome * 100).toFixed(0)}%`} tone={m.debtToIncome <= 0.36 ? "good" : "bad"} sub="of income on repayments · healthy below 36%" />
+          <StatCard label="Left over each month" value={f(m.monthlySurplus)} tone={m.monthlySurplus >= 0 ? "good" : "bad"} />
+          <StatCard label="Safety savings" value={`${m.emergencyMonths.toFixed(1)} months`} tone={m.emergencyMonths >= 3 && m.monthlySurplus >= 0 ? "good" : "warn"} sub="of essential costs · aim for 3–6" />
+          <Card className="col-span-2 md:col-span-4">
+            <p className="text-sm text-navy-600"><strong>What you own (in this check):</strong> {[...latest.input.assets.filter(x => x.value > 0).map(x => `${x.name} ${f(x.value)}`), ...(latest.input.savings > 0 ? [`Savings ${f(latest.input.savings)}`] : [])].join(" · ") || "nothing entered"}. Missing something? <a href="/health?edit=1" className="font-semibold text-teal-700">Edit my answers</a>, then click &ldquo;See my Financial Health&rdquo; to save.</p>
+          </Card>
+        </div>
+        <Card className="flex items-center justify-center gap-6">
+          <ScoreRing value={m.healthScore} label="Financial Health" sub={m.healthBand} size={110} />
+          <ScoreRing value={m.stressScore} label="Money stress" sub={m.stressBand} invert size={110} />
+        </Card>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card as="section">
+          <h2 className="text-lg font-bold">Your progress over time</h2>
+          {history && history.length > 2
+            ? <ScoreHistory data={history.map(h => ({ date: new Date(h.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }), health: h.health_score ?? 0, stress: h.stress_score ?? 0 }))} />
+            : <p className="mt-2 text-sm text-navy-500">{delta === null || history!.length < 3 ? "Update your numbers each month; your progress chart appears after your third check." : ""}</p>}
+        </Card>
+        <Card as="section">
+          <h2 className="text-lg font-bold">Top recommendations</h2>
+          <ol className="mt-3 space-y-2">{latest.advice.recommendations.slice(0, 3).map((r, i) => <li key={i} className="flex gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-500 text-xs font-bold text-white">{i + 1}</span><span><strong>{r.title}</strong></span></li>)}</ol>
+          <Link href="/health" className="mt-3 inline-block text-sm font-semibold text-teal-700">See full results →</Link>
         </Card>
       </div>
     </div>

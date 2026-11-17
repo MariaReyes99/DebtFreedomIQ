@@ -8,6 +8,7 @@ import { ExpenseDonut, BalanceBars, DebtBars } from "./charts";
 import NextSteps from "./NextSteps";
 import GapPlan from "./GapPlan";
 import CashRunway from "./CashRunway";
+import DoFirst from "./DoFirst";
 import { buildSolutions } from "@/lib/solutions";
 import { insights, soWhat, LABELS } from "@/lib/insights";
 
@@ -41,13 +42,59 @@ export default function HealthResults({ input, metrics: m, advice, help, country
           <p className="mt-2 text-sm">Use <strong>Edit my answers</strong> to fix them.</p>
         </div>
       )}
-      {crisis && (
-        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900">
-          <p className="font-bold">You don&apos;t have to handle this alone.</p>
-          <p className="mt-1 text-sm">Free, confidential support is available now. <strong>{c.firstCall.name}</strong>{c.firstCall.phone && <> on <a className="font-semibold underline" href={`tel:${c.firstCall.phone.replace(/[^\d+]/g, "")}`}>{c.firstCall.phone}</a></>} can help with money worries. If you&apos;re feeling overwhelmed, {crisisLabel(c.crisis.name, c.crisis.phone)} <a className="font-semibold underline" href={`tel:${c.crisis.phone?.replace(/[^\d+]/g, "")}`}>{c.crisis.phone}</a>. In an emergency call {c.emergency}.</p>
+      {/* 1. Your situation */}
+      <section aria-labelledby="situation">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <h2 id="situation" className="text-xl font-bold">Your situation</h2>
+          <Badge tone={m.healthScore < 40 || m.monthlySurplus < 0 ? "amber" : "green"}>{m.healthScore < 25 ? "Needs attention now" : m.healthScore < 40 || m.monthlySurplus < 0 ? "Needs attention soon" : m.healthScore < 70 ? "Getting there" : "In good shape"}</Badge>
+          {saved ? <Badge tone="green">✓ Saved to your account</Badge> : loggedIn ? <Badge tone="red">⚠ Not saved: database problem</Badge> : <Badge tone="gray">Not saved yet</Badge>}
         </div>
-      )}
+      {/* Actions first: what's good, what needs attention, what to do next */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card as="section" className="border-emerald-200 bg-emerald-50/50">
+          <h2 className="text-lg font-bold">✅ What&apos;s good</h2>
+          <ul className="mt-2 space-y-2 text-[15px]">{ins.good.length ? ins.good.map(x => <li key={x.title}><strong>{x.title}.</strong> <span className="text-navy-700">{x.detail}</span></li>) : <li className="text-navy-600">Doing this check is a good first step.</li>}</ul>
+        </Card>
+        <Card as="section" className="border-amber-200 bg-amber-50/60">
+          <h2 className="text-lg font-bold">⚠️ What needs attention</h2>
+          <ul className="mt-2 space-y-2 text-[15px]">{ins.attention.length ? ins.attention.map(x => <li key={x.title}><strong>{x.title}.</strong> <span className="text-navy-700">{x.detail}</span></li>) : <li className="text-navy-600">Nothing urgent. Keep going.</li>}</ul>
+        </Card>
+        <Card as="section" className="border-teal-300 bg-teal-50">
+          <h2 className="text-lg font-bold">👉 What to do next</h2>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px]">{advice.nextSteps.slice(0, 3).map((x, k) => <li key={k}>{x}</li>)}</ol>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button href={isPremium ? "/plan" : loggedIn ? "/pricing" : "/signup?next=/health"} size="sm">{isPremium ? "Open my step-by-step plan" : loggedIn ? "Get my step-by-step plan" : "Save my results (free)"}</Button>
+            <Button href="/help" size="sm" variant="secondary">Get help</Button>
+          </div>
+        </Card>
+      </div>
 
+      </section>
+
+      {/* 2. Do these first */}
+      <DoFirst input={input} m={m} c={c} />
+
+      {/* 3. Recovery options */}
+      <GapPlan options={buildSolutions(input, m, c, f)} gap={Math.max(0, -m.monthlySurplus)} fmt={f} />
+
+      {/* 4. Explore my future (optional) */}
+      <Card as="section" className="border-navy-200">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-navy-500">Explore my future · not required today</p>
+            <h2 className="mt-1 text-lg font-bold">Want to compare different approaches?</h2>
+            <p className="text-sm text-navy-600">Try a move and see where it takes your cash, debts and retirement.</p>
+          </div>
+          <Button href="/whatif" variant="secondary">Open scenario planner →</Button>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[["🏠", "Property options", "sell-rental"], ["📈", "Investment options", "investments"], ["💳", "Debt options", "interest-only"], ["🌅", "Retirement impact", ""]].map(([i, l, t]) => (
+            <a key={l} href={t ? `/whatif?try=${t}` : "/whatif"} className="rounded-xl border border-navy-100 p-3 text-sm font-semibold hover:border-teal-400 hover:bg-teal-50"><span className="mr-1" aria-hidden>{i}</span>{l}</a>
+          ))}
+        </div>
+      </Card>
+
+      <h2 className="text-lg font-bold">Your numbers, explained</h2>
       {/* Scores */}
       <Card className="bg-gradient-to-br from-navy-900 to-navy-800 text-white">
         <div className="grid items-center gap-6 md:grid-cols-[auto_1fr]">
@@ -58,34 +105,14 @@ export default function HealthResults({ input, metrics: m, advice, help, country
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="teal">Your personalised guidance</Badge>
-              {saved ? <Badge tone="green">✓ Saved to your account</Badge> : loggedIn ? <Badge tone="red">⚠ Not saved: database problem</Badge> : <Badge tone="gray">Not saved</Badge>}
+              
             </div>
             <p className="mt-3 text-lg leading-relaxed text-navy-50">{advice.summary}</p>
           </div>
         </div>
       </Card>
 
-      {/* Actions first: what's good, what needs attention, what to do next */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card as="section" className="border-emerald-200 bg-emerald-50/50">
-          <h2 className="text-lg font-bold">✅ What&apos;s good</h2>
-          <ul className="mt-2 space-y-2 text-sm">{ins.good.length ? ins.good.map(x => <li key={x.title}><strong>{x.title}.</strong> <span className="text-navy-700">{x.detail}</span></li>) : <li className="text-navy-600">Doing this check is a good first step.</li>}</ul>
-        </Card>
-        <Card as="section" className="border-amber-200 bg-amber-50/60">
-          <h2 className="text-lg font-bold">⚠️ What needs attention</h2>
-          <ul className="mt-2 space-y-2 text-sm">{ins.attention.length ? ins.attention.map(x => <li key={x.title}><strong>{x.title}.</strong> <span className="text-navy-700">{x.detail}</span></li>) : <li className="text-navy-600">Nothing urgent. Keep going.</li>}</ul>
-        </Card>
-        <Card as="section" className="border-teal-300 bg-teal-50">
-          <h2 className="text-lg font-bold">👉 What to do next</h2>
-          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm">{advice.nextSteps.slice(0, 3).map((x, k) => <li key={k}>{x}</li>)}</ol>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button href={isPremium ? "/plan" : loggedIn ? "/pricing" : "/signup?next=/health"} size="sm">{isPremium ? "Open my step-by-step plan" : loggedIn ? "Get my step-by-step plan" : "Save my results (free)"}</Button>
-            <Button href="/help" size="sm" variant="secondary">Get help</Button>
-          </div>
-        </Card>
-      </div>
 
-      <h2 className="text-lg font-bold">Your numbers, explained</h2>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label={LABELS.netWorth} icon="🏦" value={f(m.netWorth)} tone={m.netWorth >= 0 ? "good" : "bad"} sub={sw.netWorth} />
         <StatCard label={LABELS.dti} icon="⚖️" value={pct(m.debtToIncome)} tone={dtiTone} sub={sw.dti} />
@@ -127,7 +154,6 @@ export default function HealthResults({ input, metrics: m, advice, help, country
         </div>
       </div>
 
-      <GapPlan options={buildSolutions(input, m, c, f)} gap={Math.max(0, -m.monthlySurplus)} fmt={f} />
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-3">

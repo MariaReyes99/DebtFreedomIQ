@@ -12,6 +12,8 @@ import RiskAnalysis from "./RiskAnalysis";
 import PlatformCompare from "./PlatformCompare";
 import { useRouter } from "next/navigation";
 import { quickPicks, GROUPS, type Group } from "@/lib/quickpicks";
+import { monthlyPath } from "@/lib/whatif";
+import ProjectionCharts from "./ProjectionCharts";
 import { Badge, Button, Card, cx } from "./ui";
 
 const SAVED = "dfiq_whatif_scenarios";
@@ -24,7 +26,7 @@ function Section({ n, title, children, locked }: { n: number; title: string; chi
   return <Card as="section" className={cx(locked && "opacity-60")}><h2 className="text-lg font-bold">{n}. {title}{locked && <Badge tone="navy" className="ml-2">Premium Plus</Badge>}</h2><fieldset disabled={locked} className={cx("mt-3 min-w-0", locked && "select-none")}>{children}</fieldset></Card>;
 }
 
-export default function WhatIfLab({ input: base, countryCode, plus }: { input: AssessmentInput; countryCode: CountryCode; plus: boolean }) {
+export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: { input: AssessmentInput; countryCode: CountryCode; plus: boolean; tryFirst?: string }) {
   const c = COUNTRIES[countryCode];
   const f = (v: number) => money(c, v);
   const props = useMemo(() => propertiesOf(base), [base]);
@@ -35,6 +37,7 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
   const [mode, setMode] = useState<"basic" | "expert">("basic");
   const [group, setGroup] = useState<Group>("property");
   const [picked, setPicked] = useState<string[]>([]);
+  const [details, setDetails] = useState(false);
   const [ch, setCh] = useState<Choices>(NO_CHOICES);
   const [planMsg, setPlanMsg] = useState("");
   const toPlan = async () => {
@@ -54,6 +57,25 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
   const setDebt = (id: string, patch: Partial<DebtChoice>) => setCh(x => ({ ...x, debts: { ...x.debts, [id]: { ...(x.debts[id] ?? {}), ...patch } } }));
   const setAdd = (id: string, patch: Partial<NewAsset>) => setCh(x => ({ ...x, add: x.add.map(a => (a.id === id ? { ...a, ...patch } : a)) }));
   const picks = useMemo(() => quickPicks(base, f), [base]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Predicted effect of each card on its own: + or − per month
+  const baseSurplus = useMemo(() => calculate(base).monthlySurplus, [base]);
+  const impact = useMemo(() => Object.fromEntries(picks.map(p => [p.id, Math.round(calculate(applyChoices(base, p.apply(NO_CHOICES)).input).monthlySurplus - baseSurplus)])), [picks, base, baseSurplus]);
+  const assetOf = (id: string) => id.split("-").slice(1).join("-");
+  // Our suggestion: the fewest cards (max 3) that close the gap, biggest effect first, no clashes on the same asset
+  const suggestion = useMemo(() => {
+    // Least disruptive first: temporary changes and selling some investments before selling a rental; selling the family home last
+    const tier = (id: string) => (id.startsWith("down-") ? 3 : id.startsWith("sell-") ? 2 : id.startsWith("ks") ? 2 : 1);
+    const pool = picks.filter(p => (plus || !p.plusOnly) && impact[p.id] > 0 && !p.retireAge && p.group !== "life").sort((a, b) => tier(a.id) - tier(b.id) || impact[b.id] - impact[a.id]);
+    const chosen: typeof pool = [];
+    let c = NO_CHOICES;
+    for (const p of pool) {
+      if (chosen.length >= 4 || calculate(applyChoices(base, c).input).monthlySurplus >= 0) break;
+      if (chosen.some(x => x.id === p.id || (assetOf(x.id) && assetOf(x.id) === assetOf(p.id)))) continue;
+      chosen.push(p); c = p.apply(c);
+    }
+    const after = calculate(applyChoices(base, c).input).monthlySurplus;
+    return { picks: chosen, after };
+  }, [picks, impact, base, plus]); // eslint-disable-line react-hooks/exhaustive-deps
   const togglePick = (id: string) => {
     const next = picked.includes(id) ? picked.filter(x => x !== id) : [...picked.filter(x => !(id.startsWith("ret") && x.startsWith("ret")) && !(id.startsWith("inv") && x.startsWith("inv") && x.split("-")[1] === id.split("-")[1])), id];
     setPicked(next);
@@ -61,6 +83,12 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
     const ra = [...next].reverse().map(pid => picks.find(p => p.id === pid)?.retireAge).find(Boolean);
     if (ra) setRetireAge(ra);
   };
+  useEffect(() => {
+    if (!tryFirst) return;
+    const prefix: Record<string, string> = { investments: "inv25-", "sell-rental": "sell-", "interest-only": "io-", valuables: "val-", car: "car", boarder: "boarder", refinance: "refi", savings: "savings-clear", downsize: "down-" };
+    const p = picks.find(x => x.id.startsWith(prefix[tryFirst] ?? "§") && (plus || !x.plusOnly));
+    if (p) { setGroup(p.group); togglePick(p.id); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ages = typeof age === "number" && age >= 16 ? { age, retireAge: typeof retireAge === "number" ? retireAge : undefined } : null;
 
   const view = (inp: AssessmentInput) => ({ m: calculate(inp), t: debtTimeline(inp), long: plus && ages ? longView(inp, ages, false) : null });
@@ -90,9 +118,8 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
   return (
     <div className="space-y-6">
       <Card className="border-teal-200 bg-teal-50/60">
-        <p className="font-semibold text-teal-900">See the result of every move before you make it. 🧪</p>
-        <p className="mt-1 text-sm text-teal-900">Choose what you&apos;d do with your property, debts, savings and investments. We calculate the effect on your cash flow, debts{plus ? ", financial position in 10 years and retirement" : ""}. You decide. Nothing changes in your account. General information, not advice: talk to a financial adviser and an accountant before acting.</p>
-        {!plus && <p className="mt-2 text-sm text-teal-900"><strong>Premium:</strong> try one scenario at a time. <a href="/checkout?tier=premium_plus" className="font-semibold underline">Premium Plus</a> adds refinancing, buying assets, lump sums, 10-year and retirement figures, and saving scenarios to compare.</p>}
+        <p className="font-semibold text-teal-900">🧪 Tap a move. Watch your numbers and graphs change. You decide.</p>
+        <p className="mt-1 text-xs text-teal-800">Nothing changes in your account. General information, not advice.{!plus && <> · <a href="/checkout?tier=premium_plus" className="font-semibold underline">Premium Plus</a> unlocks every move, retirement and comparisons.</>}</p>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_440px]">
@@ -104,27 +131,37 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
             {mode === "expert" && picked.length > 0 && <p className="text-xs text-navy-500">Your Basic picks are loaded; change anything below.</p>}
           </div>
           {mode === "basic" ? (
+            <>
+            {baseSurplus < 0 && suggestion.picks.length > 0 && (
+              <Card className="border-2 border-teal-400 bg-teal-50">
+                <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Our suggestion · least disruptive first</p>
+                <p className="mt-1 text-lg font-bold">{suggestion.after >= 0 ? `These ${suggestion.picks.length} moves close your ${f(-baseSurplus)}/month gap` : `These ${suggestion.picks.length} moves cut your gap to ${f(-suggestion.after)}/month`}</p>
+                <ul className="mt-2 space-y-1 text-sm">{suggestion.picks.map(p => <li key={p.id} className="flex justify-between gap-3"><span>{p.icon} {p.title}</span><strong className="whitespace-nowrap text-emerald-700">+{f(impact[p.id])}/mo</strong></li>)}</ul>
+                <Button size="sm" className="mt-3" onClick={() => { setPicked([]); let c = NO_CHOICES; for (const p of suggestion.picks) c = p.apply(c); setPicked(suggestion.picks.map(p => p.id)); setCh(c); }}>Try these together</Button>
+              </Card>
+            )}
             <Card as="section">
-              <h2 className="text-lg font-bold">What would you like to try?</h2>
-              <p className="mt-1 text-sm text-navy-600">Tap one or more. The result updates straight away. Tap again to undo.</p>
+              <h2 className="text-lg font-bold">Or pick your own moves</h2>
               <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Kinds of decision">
                 {GROUPS.map(g => { const n = picks.filter(p => p.group === g.key).length; return n ? <button key={g.key} type="button" role="tab" aria-selected={group === g.key} onClick={() => setGroup(g.key)} className={cx("rounded-full border px-3 py-1.5 text-sm font-semibold", group === g.key ? "border-navy-900 bg-navy-900 text-white" : "border-navy-200 bg-white text-navy-700")}>{g.icon} {g.label}{picked.some(id => picks.find(p => p.id === id)?.group === g.key) ? " •" : ""}</button> : null; })}
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {picks.filter(p => p.group === group).map(p => {
+                {[...picks.filter(p => p.group === group)].sort((a, b) => (impact[b.id] ?? 0) - (impact[a.id] ?? 0)).map((p, k) => {
                   const on = picked.includes(p.id), locked = p.plusOnly && !plus;
                   return (
                     <button key={p.id} type="button" aria-pressed={on} disabled={locked} onClick={() => togglePick(p.id)}
                       className={cx("rounded-2xl border-2 p-4 text-left transition", on ? "border-teal-500 bg-teal-50" : "border-navy-100 bg-white hover:border-teal-300", locked && "cursor-not-allowed opacity-50")}>
-                      <span className="flex items-start justify-between gap-2"><span className="text-2xl" aria-hidden>{p.icon}</span>{on ? <Badge tone="teal">✓ Added</Badge> : locked ? <Badge tone="navy">Premium Plus</Badge> : null}</span>
+                      <span className="flex items-start justify-between gap-2"><span className="text-2xl" aria-hidden>{p.icon}</span>{on ? <Badge tone="teal">✓ Added</Badge> : locked ? <Badge tone="navy">Premium Plus</Badge> : k === 0 && impact[p.id] > 0 ? <Badge tone="green">Biggest effect</Badge> : null}</span>
                       <span className="mt-2 block font-bold">{p.title}</span>
-                      <span className="mt-1 block text-sm text-navy-600">{p.detail}</span>
+                      <span className={cx("mt-1 block text-lg font-bold", impact[p.id] > 0 ? "text-emerald-600" : impact[p.id] < 0 ? "text-red-600" : "text-navy-500")}>{p.retireAge ? "Changes retirement" : impact[p.id] === 0 ? "No change each month" : `${impact[p.id] > 0 ? "+" : "−"}${f(Math.abs(impact[p.id]))}/month`}</span>
+                      <span className="mt-0.5 block text-xs text-navy-500">{p.detail}</span>
                     </button>
                   );
                 })}
               </div>
               {picked.length > 0 && <button type="button" onClick={() => { setPicked([]); setCh(NO_CHOICES); }} className="mt-3 text-sm font-semibold text-teal-700">Clear all picks</button>}
             </Card>
+            </>
           ) : (<>
           <Section n={1} title="Property">
             {!props.length && <p className="text-sm text-navy-500">No property in your Financial Health check.</p>}
@@ -236,6 +273,22 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
         <div id="result" className="scroll-mt-20 space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Card as="section" aria-live="polite">
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold">The result</h2>{changed && <button type="button" onClick={() => { setCh(NO_CHOICES); setPicked([]); }} className="text-sm font-semibold text-teal-700">Reset</button>}</div>
+            {/* The three numbers that matter most */}
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              {[
+                ["Each month", f(A.monthlySurplus), f(B.monthlySurplus), A.monthlySurplus > B.monthlySurplus ? "up" : A.monthlySurplus < B.monthlySurplus ? "down" : ""],
+                ["Cash lasts", runOut(A.monthlySurplus, result.input.savings), runOut(B.monthlySurplus, base.savings), ""],
+                ["You owe", f(A.totalDebts), f(B.totalDebts), A.totalDebts < B.totalDebts ? "up" : A.totalDebts > B.totalDebts ? "down" : ""],
+              ].map(([l, v, was, dir]) => (
+                <div key={l} className={cx("rounded-xl p-2", dir === "up" ? "bg-emerald-50" : dir === "down" ? "bg-red-50" : "bg-navy-50")}>
+                  <p className="text-[11px] font-semibold text-navy-500">{l}</p>
+                  <p className={cx("text-base font-bold leading-tight", dir === "up" ? "text-emerald-700" : dir === "down" ? "text-red-700" : "text-navy-900")}>{v}</p>
+                  {changed && v !== was && <p className="text-[10px] text-navy-500">was {was}</p>}
+                </div>
+              ))}
+            </div>
+            {mode === "basic" && <button type="button" onClick={() => setDetails(d => !d)} className="mt-2 text-xs font-semibold text-teal-700" aria-expanded={details}>{details ? "Hide details ▲" : "Show all details ▼"}</button>}
+            {(mode === "expert" || details) && <>
             <table className="mt-2 w-full text-sm">
               <thead><tr className="text-navy-500"><th /><th className="text-right font-normal">Now</th><th className="text-right font-normal">With your choices</th></tr></thead>
               <tbody>
@@ -255,11 +308,12 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
                 {row("Financial Health score", `${B.healthScore}/100`, `${A.healthScore}/100`, cmp(B.healthScore, A.healthScore))}
               </tbody>
             </table>
-            {Object.keys(result.t.perDebt).length > 0 && changed && (
+            </>}
+            {(mode === "expert" || details) && Object.keys(result.t.perDebt).length > 0 && changed && (
               <details open className="mt-3 text-xs text-navy-600"><summary className="cursor-pointer font-semibold">When each debt is paid off</summary>
                 <ul className="mt-1 space-y-0.5">{Object.entries(result.t.perDebt).map(([id, d]) => <li key={id}>{d.name}: {when(d.month)}{before.t.perDebt[id] && before.t.perDebt[id].month !== d.month ? ` (was ${when(before.t.perDebt[id].month)})` : ""}</li>)}</ul></details>
             )}
-            {result.notes.length > 0 && <ul className="mt-3 space-y-1 border-t border-navy-100 pt-3 text-xs text-navy-600">{result.notes.map((n, k) => <li key={k}>• {n.replace(/\b(\d{3,})\b(?![%.-]|-year)/g, m => f(Number(m)))}</li>)}</ul>}
+            {(mode === "expert" || details) && result.notes.length > 0 && <ul className="mt-3 space-y-1 border-t border-navy-100 pt-3 text-xs text-navy-600">{result.notes.map((n, k) => <li key={k}>• {n.replace(/\b(\d{3,})\b(?![%.-]|-year)/g, m => f(Number(m)))}</li>)}</ul>}
             {result.notes.some(n => /sold/.test(n)) && <p className="mt-2 text-xs text-amber-800">Selling costs are estimated at 3%. Tax may apply (e.g. NZ bright-line rules); check with an accountant.</p>}
             <p className="mt-2 text-[11px] text-navy-400">Each debt is repaid at its own repayment; interest counted up to 50 years.{plus ? " Long-term figures assume 6% investment growth, 3% property growth and 2.5% inflation." : ""}</p>
             {changed && (plus ? (saved.length < 3 && <Button size="sm" variant="secondary" className="mt-3" onClick={() => { const name = prompt("Name this scenario", `Scenario ${String.fromCharCode(65 + saved.length)}`); if (name) persist([...saved, { name: name.slice(0, 40), choices: ch }]); }}>💾 Save to compare</Button>)
@@ -292,12 +346,15 @@ export default function WhatIfLab({ input: base, countryCode, plus }: { input: A
         </div>
       </div>
 
+      <ProjectionCharts before={monthlyPath(base, 120)} after={monthlyPath(result.input, 120)} changed={changed} symbol={c.symbol} fmt={f}
+        longBefore={plus ? before.long?.series ?? null : null} longAfter={plus ? result.long?.series ?? null : null} />
+
       {plus && ages ? <RiskAnalysis before={base} after={result.input} changed={changed} ages={ages} />
         : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Strengths, weaknesses &amp; risks</h2><p className="mt-1 text-sm text-navy-600">{plus ? "Enter your age (in “Your retirement picture”) to see the analysis." : "🔒 Premium Plus analyses your finances now and with your choices: what's strong, what's weak, and the risks (interest rates, markets, property concentration, how long savings last)."}</p></Card>}
       {plus ? <PlatformCompare startBalance={result.input.assets.filter(a => a.type === "investments" || a.type === "retirement").reduce((t, a) => t + a.value, 0) || 10000} monthly={Math.max(0, A.monthlySurplus)} years={ages ? Math.max(5, (ages.retireAge ?? 65) - ages.age) : 20} countryCode={countryCode} fmt={f} />
         : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Investment platform comparison</h2><p className="mt-1 text-sm text-navy-600">🔒 Premium Plus compares what different platforms&apos; and funds&apos; fees do to your investments over time.</p></Card>}
 
-      {changed && <CashRunway income={A.monthlyIncome} living={A.monthlyExpenses} debt={A.monthlyDebtPayments} savings={result.input.savings} symbol={c.symbol} fmt={f} />}
+      {changed && mode === "expert" && <CashRunway income={A.monthlyIncome} living={A.monthlyExpenses} debt={A.monthlyDebtPayments} savings={result.input.savings} symbol={c.symbol} fmt={f} />}
 
       {plus && saved.length > 0 && (
         <Card as="section">

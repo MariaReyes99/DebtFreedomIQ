@@ -220,3 +220,19 @@ export function debtTimeline(i: AssessmentInput): DebtTimeline {
   const maxOf = (xs: { month: number | null }[]) => (xs.length ? (xs.some(x => x.month === null) ? null : Math.max(...xs.map(x => x.month as number))) : 0);
   return { debtFree: maxOf(done), mortgageFree: maxOf(done.filter(x => x.mortgage)), consumerFree: maxOf(done.filter(x => !x.mortgage)), interest: Math.round(interest), capped, perDebt };
 }
+
+/** Month-by-month: cash in the bank and total owed (each debt at its own repayment), for the projection charts. */
+export function monthlyPath(i: AssessmentInput, months: number) {
+  const surplus = i.incomes.reduce((t, x) => t + x.amount, 0) - i.expenses.reduce((t, x) => t + x.amount, 0) - i.debts.reduce((t, d) => t + (d.balance > 0 ? d.minPayment : 0), 0);
+  const bal = i.debts.filter(d => d.balance > 0).map(d => ({ b: d.balance, r: d.rate / 100 / 12, p: d.minPayment }));
+  const out: { m: number; cash: number; owed: number }[] = [];
+  let freed = 0;
+  for (let m = 0; m <= months; m++) {
+    out.push({ m, cash: Math.round(i.savings + m * surplus + freed), owed: Math.round(bal.reduce((t, d) => t + Math.max(0, d.b), 0)) });
+    for (const d of bal) {
+      if (d.b <= 0) { freed += d.p; continue; } // a paid-off debt's repayment stays in your pocket
+      d.b = d.b * (1 + d.r) - d.p;
+    }
+  }
+  return out;
+}

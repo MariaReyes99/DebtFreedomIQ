@@ -11,13 +11,15 @@ import { track } from "@/lib/events";
 import type { HelpCategory } from "@/lib/types";
 import BriefGenerator from "@/components/BriefGenerator";
 import CopyBox from "@/components/CopyBox";
+import HelpTriage, { type Need } from "@/components/HelpTriage";
 import { Badge, Button, Card, PageHeader, PremiumGate, Disclaimer } from "@/components/ui";
 
 export const metadata = { title: "Find Help" };
 
-function ResourceRow({ r }: { r: Resource }) {
+function ResourceRow({ r, tag }: { r: Resource; tag?: "first" | "urgent" }) {
   return (
     <li className="border-t border-navy-100 py-3 first:border-0">
+      {tag && <p className="mb-1">{tag === "urgent" ? <Badge tone="red">🔴 Immediate support</Badge> : <Badge tone="green">🟢 Best first step for most people</Badge>}</p>}
       <p className="font-semibold">{r.name}</p>
       <p className="text-sm text-navy-600">{r.what}</p>
       <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -61,9 +63,32 @@ export default async function HelpPage() {
     lawyer: findGroups(/Legal|Complaints/).flatMap(g => g.items).slice(0, 3),
   };
 
+  // Triage: the best places to start for each kind of need, from this country's services
+  const items = (re: RegExp, nameRe?: RegExp) => findGroups(re).flatMap(g => g.items).filter(r => !nameRe || nameRe.test(r.name + " " + r.what));
+  const uniq = (rs: (Resource | undefined)[]) => rs.filter((r, i, a): r is Resource => !!r && a.findIndex(x => x?.name === r.name) === i).slice(0, 3);
+  const near = (k: HelpCategory, label: string) => ({ label: `${label}${area.city ? ` near ${area.city}` : " near you"} on Google Maps`, url: mapsSearchUrl(LOCAL_SEARCH[c.code][k], area.city, c.name) });
+  const crisisRes: Resource = { name: c.crisis.name, what: "Free, confidential support any time", phone: c.crisis.phone, text: c.crisis.text };
+  const needs: Need[] = [
+    { key: "bills", icon: "🧾", label: "I can't pay my bills", items: uniq([c.firstCall, ...items(/Money & debt|not-for-profit|Debt restructuring/)]), nearYou: near("budget_adviser", "Budget help"), extra: { label: "Write a hardship letter to a lender", href: "#letter" } },
+    { key: "home", icon: "🏠", label: "I may lose my home", items: uniq([...items(/housing|Mortgage|Housing loan/, /tenan|shelter|housing|counsel|Pag-IBIG|rent|home/i), ...items(/Legal/), c.firstCall]), nearYou: near("lawyer", "Free legal help"), extra: { label: "Hardship letter for your lender or landlord", href: "#letter" } },
+    { key: "collectors", icon: "📨", label: "Debt collectors or court", items: uniq([...items(/Legal/), ...items(/./, /Public Attorney|Legal Aid|LawHelp/i), ...items(/Complaints|lenders|Money & debt/, /complain|CFPB|AFCA|BSP|Ombudsman/i), c.firstCall]), nearYou: near("lawyer", "Free legal help") },
+    { key: "food", icon: "🍲", label: "I need food", items: uniq([...items(/^(?!Health)/, /food|pantry|SNAP|Trussell|Salvation|Vinnies|Vincent|Izzy|Family Services|Citizens Advice Bureau|211|AICS/i), ...items(/Government|Benefit/, /grant|hardship|Work and Income|Centrelink|Universal Credit|benefit/i)]), nearYou: { label: `Food banks${area.city ? ` near ${area.city}` : " near you"} on Google Maps`, url: mapsSearchUrl("food bank", area.city, c.name) } },
+    { key: "job", icon: "💼", label: "I lost my job or income", items: uniq([...items(/./, /unemploy|jobseeker|Universal Credit|Centrelink|Work and Income \(MSD\)|SSS|DOLE/i), ...items(/Lost your job|Government|Benefit/), c.firstCall]) },
+    { key: "health", icon: "🏥", label: "Medical or hospital bills", items: uniq(items(/Health/)) },
+    { key: "overwhelmed", icon: "💬", label: "I feel overwhelmed", items: [{ ...crisisRes, tag: "urgent" as const }, ...uniq(items(/Emotional/)).filter(r => r.name !== c.crisis.name && !/emergency/i.test(r.name)).slice(0, 1), c.firstCall] },
+  ].filter(n => n.items.length > 0);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
-      <PageHeader eyebrow="Find Help" title={`The right help in ${c.name}`}>Most people don&apos;t know who can help. We match your situation to the right type of professional, and show the free services you can use today.</PageHeader>
+      <PageHeader eyebrow="Get help" title={`Free help in ${c.name}`}>{`You don't have to work this out alone. Tell us what's happening and we'll show you who to contact first${area.city ? ` near ${area.city}` : ""}.`}</PageHeader>
+
+      <div className="mb-10"><HelpTriage needs={needs} area={area.city} /></div>
+
+      {/* Free: hardship letter */}
+      <section id="letter" aria-labelledby="letter-h" className="mb-10 scroll-mt-24">
+        <h2 id="letter-h" className="mb-3 text-xl font-bold">Hardship letter to a lender or landlord <Badge tone="green" className="ml-2 align-middle">Free</Badge></h2>
+        <Card><CopyBox title="Copy, add your details, and send it today" text={CREDITOR_TEMPLATE(profile?.full_name ?? "", c.rightsNote)} /></Card>
+      </section>
 
       {/* Free: categories */}
       <section aria-labelledby="cats">
@@ -113,7 +138,6 @@ export default async function HelpPage() {
                 ))}
               </div>
             </Card>
-            <Card><CopyBox title="Hardship letter to a creditor" text={CREDITOR_TEMPLATE(profile?.full_name ?? "", c.rightsNote)} /></Card>
           </div>
         )}
       </section>
@@ -129,7 +153,7 @@ export default async function HelpPage() {
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {c.groups.map(g => <Card key={g.title}><h3 className="font-bold">{g.title}</h3><ul className="mt-2">{g.items.map(r => <ResourceRow key={r.name + (r.phone ?? "")} r={r} />)}</ul></Card>)}
+          {c.groups.map(g => <Card key={g.title}><h3 className="font-bold">{g.title}</h3><ul className="mt-2">{g.items.map(r => <ResourceRow key={r.name + (r.phone ?? "")} r={r} tag={r.name === c.firstCall.name ? "first" : /emotional/i.test(g.title) && r.name === g.items[0]?.name ? "urgent" : undefined} />)}</ul></Card>)}
         </div>
         <p className="mt-3 text-sm text-navy-600"><strong>Know your rights:</strong> {c.rightsNote}</p>
       </section>
