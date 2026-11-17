@@ -1,5 +1,7 @@
 import type { Solution } from "@/lib/solutions";
 import { Badge, Card } from "./ui";
+import Stars from "./Stars";
+import { solutionMeta } from "@/lib/scorecard";
 
 // Which Explore my future scenario lets you try different amounts of each option
 const TRY: Record<string, string> = { "sell-investments": "investments", sell: "sell-rental", "sell-valuables": "valuables", "swap-car": "car", boarder: "boarder", "high-interest": "savings" };
@@ -36,9 +38,15 @@ export default function GapPlan({ options, gap, fmt }: { options: Solution[]; ga
                   {o.oneOff ? <p className="text-xs text-navy-500">+ {fmt(o.oneOff)} one-off</p> : null}
                 </div>
               </div>
-              <p className="mt-1.5 text-sm text-navy-700">{o.detail}</p>
-              {o.caution && <p className="mt-1.5 text-xs text-amber-800">⚠️ {o.caution}</p>}
-              {tryFor(o.id) && <a href={`/whatif?try=${tryFor(o.id)}`} className="mt-2 inline-block rounded-full border border-teal-300 px-3 py-1 text-sm font-semibold text-teal-700 hover:bg-teal-50">See different options →</a>}
+              {(() => { const m = solutionMeta(o.id); return (
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                  <Stars value={m.difficulty} label="Difficulty" /><Stars value={m.risk} label="Risk" tone="amber" /><span className="text-navy-500">⏱ {m.time}</span>
+                </div>); })()}
+              <details className="mt-1.5 text-sm"><summary className="cursor-pointer text-navy-600">Details{o.caution ? " and cautions" : ""}</summary>
+                <p className="mt-1 text-navy-700">{o.detail}</p>
+                {o.caution && <p className="mt-1.5 text-xs text-amber-800">⚠️ {o.caution}</p>}
+              </details>
+              {tryFor(o.id) && <a href={`/whatif?try=${tryFor(o.id)}`} className="mt-2 inline-block rounded-full border border-teal-300 px-3 py-1 text-sm font-semibold text-teal-700 hover:bg-teal-50">Explore this scenario →</a>}
               {gap > 0 && o.kind !== "fix" && o.monthly > 0 && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-navy-500">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-navy-100" aria-hidden><div className="h-full rounded-full bg-teal-500" style={{ width: `${covered}%` }} /></div>

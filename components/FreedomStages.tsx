@@ -4,6 +4,8 @@ import type { FreedomPlan, PlanStep } from "@/lib/freedom";
 import { COUNTRIES, money, type CountryCode } from "@/lib/countries";
 import { Badge, Button, Card, cx } from "./ui";
 import { TodayList } from "./TodayActions";
+import Stars from "./Stars";
+import { stepMeta } from "@/lib/scorecard";
 
 const SRC: Record<PlanStep["source"], { label: string; tone: "teal" | "navy" | "amber" | "gray" }> = {
   essential: { label: "Do first", tone: "navy" }, "your-choice": { label: "Your choice", tone: "teal" },
@@ -42,11 +44,12 @@ export default function FreedomStages({ plan, planId, initialDone, countryCode }
                   <span className={cx("font-semibold", isDone && "text-navy-500 line-through")}>{st.title}</span>
                   <Badge tone={SRC[st.source].tone}>{SRC[st.source].label}</Badge>
                 </span>
-                {st.detail && !isDone && <span className="mt-1 block text-sm text-navy-600">{st.detail}</span>}
-                <span className="mt-1 flex flex-wrap gap-x-4 text-xs">
+                {st.detail && !isDone && (st.detail.length > 140 ? <details className="mt-1 text-sm text-navy-600" onClick={e => e.stopPropagation()}><summary className="cursor-pointer font-semibold text-teal-700">Why and how</summary><span className="mt-1 block">{st.detail}</span></details> : <span className="mt-1 block text-sm text-navy-600">{st.detail}</span>)}
+                <span className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   <span className={cx("font-semibold", late ? "text-red-700" : "text-navy-500")}>{late ? "Overdue: " : "By "}{dateText(st.due)}</span>
                   {st.monthly ? <span className="font-semibold text-emerald-700">+{f(st.monthly)}/month</span> : null}
                   {st.oneOff ? <span className="font-semibold text-emerald-700">{f(st.oneOff)} one-off</span> : null}
+                  {!isDone && (() => { const m = stepMeta(st.id); return m ? <><Stars value={m.difficulty} label="Difficulty" /><Stars value={m.risk} label="Risk" tone="amber" /><span className="text-navy-500">⏱ {m.time}</span></> : null; })()}
                   {st.href && !isDone && <a href={st.href} className="font-semibold text-teal-700 hover:underline">{st.href === "/whatif" ? "Test it in Explore my future →" : "Fix it →"}</a>}
                 </span>
               </span>
@@ -82,6 +85,23 @@ export default function FreedomStages({ plan, planId, initialDone, countryCode }
           {s1Done ? <Badge tone="green">{s1.needed ? "Gap closed by your plan" : "Not needed ✓"}</Badge> : <Badge tone="red">Urgent</Badge>}
         </div>
         {s1.needed ? (<>
+          {(() => {
+            const achieved = Math.min(s1.gap, s1.steps.filter(st => done.includes(st.id)).reduce((t, st) => t + (st.monthly ?? 0), 0));
+            const planned = Math.min(s1.gap, covered), pct = s1.gap ? (achieved / s1.gap) * 100 : 0, planPct = s1.gap ? (planned / s1.gap) * 100 : 0;
+            return (
+              <div className="mt-4 rounded-2xl border border-navy-100 bg-navy-50/50 p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-lg font-bold"><span className="text-emerald-700">{f(achieved)}</span> achieved <span className="font-normal text-navy-500">of {f(s1.gap)}/month target</span></p>
+                  <p className="text-2xl font-bold text-navy-900">{Math.round(pct)}%</p>
+                </div>
+                <div className="relative mt-2 h-4 overflow-hidden rounded-full bg-navy-100" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label="Gap closed so far">
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-teal-200" style={{ width: `${planPct}%` }} />
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <p className="mt-1.5 text-xs text-navy-500"><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />done (ticked steps) <span className="ml-3 mr-1 inline-block h-2 w-2 rounded-full bg-teal-200" />planned: {f(planned)}{planned < s1.gap ? ` · still to find ${f(s1.gap - planned)}` : ""}</p>
+              </div>
+            );
+          })()}
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-red-50 p-3"><p className="text-xs text-red-800">Short each month now</p><p className="text-xl font-bold text-red-700">{f(s1.gap)}</p></div>
             <div className="rounded-xl bg-navy-50 p-3"><p className="text-xs text-navy-600">Cash runs out</p><p className="text-xl font-bold">{plan.before.runOutDate ? dateText(plan.before.runOutDate) : "—"}</p></div>

@@ -38,7 +38,24 @@ export default function PlatformCompare({ startBalance, monthly, years: initialY
         <label className="text-sm">Added each month<input type="number" min={0} value={contrib} onChange={e => setContrib(num(e.target.value))} className="mt-1" /></label>
         <label className="text-sm">Years<input type="number" min={1} max={60} value={years} onChange={e => setYears(Math.max(1, Math.min(60, num(e.target.value))))} className="mt-1" /></label>
       </div>
-      <div className="mt-4 overflow-x-auto">
+      {result && (
+        <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[...result.options].sort((x, y) => y.endingBalanceReal - x.endingBalanceReal).map((r, k) => {
+            const i = result.options.indexOf(r), top = result.options.reduce((m, o) => Math.max(m, o.endingBalanceReal), 0);
+            return (
+              <li key={r.id} className={`rounded-xl border p-3 ${k === 0 ? "border-2 border-emerald-400 bg-emerald-50/60" : "border-navy-100"}`}>
+                <p className="text-xs font-bold text-navy-500">{k === 0 ? "🥇 Most left after fees" : `#${k + 1}`}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 font-semibold"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: COLORS[i] }} />{r.name}</p>
+                <p className="mt-1 text-xl font-bold">{fmt(r.endingBalanceReal)}</p>
+                <p className="text-xs text-navy-500">after {years} yrs · fees cost {fmt(r.feeImpact)}</p>
+                {k > 0 && <p className="mt-1 text-xs font-semibold text-red-700">{fmt(top - r.endingBalanceReal)} less than #1</p>}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      <details className="mt-4"><summary className="cursor-pointer text-sm font-semibold text-teal-700">Edit the platforms and fees</summary>
+      <div className="mt-2 overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead><tr className="text-left text-navy-500"><th className="font-normal">Platform / fund</th><th className="font-normal">Return before fees %</th><th className="font-normal">Yearly fee %</th><th className="font-normal">Account fee / month</th><th className="text-right font-normal">After {years} yrs (today&apos;s money)</th><th className="text-right font-normal">Fees cost you</th><th /></tr></thead>
           <tbody>
@@ -60,6 +77,7 @@ export default function PlatformCompare({ startBalance, monthly, years: initialY
         </table>
       </div>
       {opts.length < 4 && <button type="button" onClick={() => setOpts(o => [...o, { id: Math.random().toString(36).slice(2, 7), name: `Platform ${"ABCD"[o.length]}`, expectedReturnPct: 6, annualFeePct: 0.5, monthlyAccountFee: 0 }])} className="mt-2 text-sm font-semibold text-teal-700">+ Add a platform</button>}
+      </details>
       {chart.length > 0 && (
         <div className="mt-4 h-64" aria-hidden>
           <ResponsiveContainer>

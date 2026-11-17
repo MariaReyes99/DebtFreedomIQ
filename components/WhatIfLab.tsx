@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation";
 import { quickPicks, GROUPS, type Group } from "@/lib/quickpicks";
 import { monthlyPath } from "@/lib/whatif";
 import ProjectionCharts from "./ProjectionCharts";
+import DecisionDashboard from "./DecisionDashboard";
+import { meters, scenarioSet, scoreScenario, type Scored } from "@/lib/scorecard";
 import { Badge, Button, Card, cx } from "./ui";
 
 const SAVED = "dfiq_whatif_scenarios";
@@ -61,21 +63,6 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
   const baseSurplus = useMemo(() => calculate(base).monthlySurplus, [base]);
   const impact = useMemo(() => Object.fromEntries(picks.map(p => [p.id, Math.round(calculate(applyChoices(base, p.apply(NO_CHOICES)).input).monthlySurplus - baseSurplus)])), [picks, base, baseSurplus]);
   const assetOf = (id: string) => id.split("-").slice(1).join("-");
-  // Our suggestion: the fewest cards (max 3) that close the gap, biggest effect first, no clashes on the same asset
-  const suggestion = useMemo(() => {
-    // Least disruptive first: temporary changes and selling some investments before selling a rental; selling the family home last
-    const tier = (id: string) => (id.startsWith("down-") ? 3 : id.startsWith("sell-") ? 2 : id.startsWith("ks") ? 2 : 1);
-    const pool = picks.filter(p => (plus || !p.plusOnly) && impact[p.id] > 0 && !p.retireAge && p.group !== "life").sort((a, b) => tier(a.id) - tier(b.id) || impact[b.id] - impact[a.id]);
-    const chosen: typeof pool = [];
-    let c = NO_CHOICES;
-    for (const p of pool) {
-      if (chosen.length >= 4 || calculate(applyChoices(base, c).input).monthlySurplus >= 0) break;
-      if (chosen.some(x => x.id === p.id || (assetOf(x.id) && assetOf(x.id) === assetOf(p.id)))) continue;
-      chosen.push(p); c = p.apply(c);
-    }
-    const after = calculate(applyChoices(base, c).input).monthlySurplus;
-    return { picks: chosen, after };
-  }, [picks, impact, base, plus]); // eslint-disable-line react-hooks/exhaustive-deps
   const togglePick = (id: string) => {
     const next = picked.includes(id) ? picked.filter(x => x !== id) : [...picked.filter(x => !(id.startsWith("ret") && x.startsWith("ret")) && !(id.startsWith("inv") && x.startsWith("inv") && x.split("-")[1] === id.split("-")[1])), id];
     setPicked(next);
@@ -90,6 +77,18 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
     if (p) { setGroup(p.group); togglePick(p.id); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const ages = typeof age === "number" && age >= 16 ? { age, retireAge: typeof retireAge === "number" ? retireAge : undefined } : null;
+
+  // Decision dashboard: score the useful scenarios. Position = non-cash assets (no growth assumed) + cash − owed.
+  const scenarios = useMemo<Scored[]>(() => {
+    const pos = (inp: AssessmentInput) => { const fixed = inp.assets.reduce((t, a) => t + a.value, 0); const mp = monthlyPath(inp, 120); return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(y => Math.round(fixed + mp[y * 12].cash - mp[y * 12].owed)); };
+    const basePath = pos(base);
+    return scenarioSet(base, picks, impact, p => plus || !p.plusOnly).map(sc => {
+      const path = sc.pickIds.length ? pos(applyChoices(base, sc.choices).input) : basePath;
+      return { ...sc, ...scoreScenario(base, sc.choices, sc.pickIds, { position10: path[10], basePosition10: basePath[10] }), path };
+    });
+  }, [base, picks, impact, plus]);
+  const metersNow = useMemo(() => meters(base), [base]);
+  const tryScenario = (sc: Scored) => { setPicked(sc.pickIds); setCh(sc.choices); setMode("basic"); setTimeout(() => document.getElementById("result")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); };
 
   const view = (inp: AssessmentInput) => ({ m: calculate(inp), t: debtTimeline(inp), long: plus && ages ? longView(inp, ages, false) : null });
   const before = useMemo(() => view(base), [base, plus, age, retireAge]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -122,6 +121,11 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
         <p className="mt-1 text-xs text-teal-800">Nothing changes in your account. General information, not advice.{!plus && <> · <a href="/checkout?tier=premium_plus" className="font-semibold underline">Premium Plus</a> unlocks every move, retirement and comparisons.</>}</p>
       </Card>
 
+      {mode === "basic" && scenarios.length > 1 && (
+        <DecisionDashboard base={base} scenarios={scenarios} picks={picks} metersNow={metersNow} metersFor={ch2 => meters(applyChoices(base, ch2).input)}
+          fmt={f} onTry={tryScenario} plus={plus} gap={Math.max(0, -Math.round(baseSurplus))} />
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[1fr_440px]">
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -132,14 +136,6 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
           </div>
           {mode === "basic" ? (
             <>
-            {baseSurplus < 0 && suggestion.picks.length > 0 && (
-              <Card className="border-2 border-teal-400 bg-teal-50">
-                <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Our suggestion · least disruptive first</p>
-                <p className="mt-1 text-lg font-bold">{suggestion.after >= 0 ? `These ${suggestion.picks.length} moves close your ${f(-baseSurplus)}/month gap` : `These ${suggestion.picks.length} moves cut your gap to ${f(-suggestion.after)}/month`}</p>
-                <ul className="mt-2 space-y-1 text-sm">{suggestion.picks.map(p => <li key={p.id} className="flex justify-between gap-3"><span>{p.icon} {p.title}</span><strong className="whitespace-nowrap text-emerald-700">+{f(impact[p.id])}/mo</strong></li>)}</ul>
-                <Button size="sm" className="mt-3" onClick={() => { setPicked([]); let c = NO_CHOICES; for (const p of suggestion.picks) c = p.apply(c); setPicked(suggestion.picks.map(p => p.id)); setCh(c); }}>Try these together</Button>
-              </Card>
-            )}
             <Card as="section">
               <h2 className="text-lg font-bold">Or pick your own moves</h2>
               <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Kinds of decision">

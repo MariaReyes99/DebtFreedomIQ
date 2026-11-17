@@ -12,6 +12,11 @@ import type { HelpCategory } from "@/lib/types";
 import BriefGenerator from "@/components/BriefGenerator";
 import CopyBox from "@/components/CopyBox";
 import HelpTriage, { type Need } from "@/components/HelpTriage";
+import SupportTeam from "@/components/SupportTeam";
+import { buildTeam, readiness } from "@/lib/supportteam";
+import { buildSolutions } from "@/lib/solutions";
+import { latestPlan } from "@/lib/plan-row";
+import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Card, PageHeader, PremiumGate, Disclaimer } from "@/components/ui";
 
 export const metadata = { title: "Find Help" };
@@ -78,6 +83,11 @@ export default async function HelpPage() {
     { key: "overwhelmed", icon: "💬", label: "I feel overwhelmed", items: [{ ...crisisRes, tag: "urgent" as const }, ...uniq(items(/Emotional/)).filter(r => r.name !== c.crisis.name && !/emergency/i.test(r.name)).slice(0, 1), c.firstCall] },
   ].filter(n => n.items.length > 0);
 
+  // Premium: the support team, ranked by priority, with readiness
+  const team = isPremium && latest ? buildTeam(latest.input, latest.metrics, matches, buildSolutions(latest.input, latest.metrics, c, fmtFor(c)), fmtFor(c)) : [];
+  const hasPlan = isPremium && latest && user ? !!(await latestPlan(await createClient(), user.id).catch(() => null)) : false;
+  const contacts = Object.fromEntries(team.map(t => [t.category, contactFor(t.category)]));
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <PageHeader eyebrow="Get help" title={`Free help in ${c.name}`}>{`You don't have to work this out alone. Tell us what's happening and we'll show you who to contact first${area.city ? ` near ${area.city}` : ""}.`}</PageHeader>
@@ -117,9 +127,9 @@ export default async function HelpPage() {
 
       {/* Premium */}
       <section aria-labelledby="matched" className="mt-10">
-        <h2 id="matched" className="mb-3 text-xl font-bold">Your personalised matches &amp; referral brief <Badge tone="navy" className="ml-2 align-middle">Premium</Badge></h2>
+        <h2 id="matched" className="mb-3 text-xl font-bold">Your financial support team <Badge tone="navy" className="ml-2 align-middle">Premium</Badge></h2>
         {!isPremium ? (
-          <PremiumGate title="Get matched to the right support" price={price}>
+          <PremiumGate title="Get your financial support team" price={price}>
             <div className="grid gap-4 md:grid-cols-2">
               {["Budget Adviser", "Debt Coach", "Mortgage Adviser", "Lawyer"].map(t => <div key={t} className="rounded-xl border p-5"><p className="text-lg font-bold">{t}</p><p className="mt-2">Why this helps you, and three questions to ask at your first appointment…</p></div>)}
               <div className="rounded-xl border p-5 md:col-span-2"><p className="font-bold">Your personalised referral brief</p><p className="mt-2">Monthly position · Debts · Assets · Goals · What I&apos;d like help with…</p></div>
@@ -129,7 +139,10 @@ export default async function HelpPage() {
           <Card className="text-center"><p>Do your Financial Health check first so we can match you.</p><Button href="/health" className="mt-3">Start the check</Button></Card>
         ) : (
           <div className="space-y-6">
+            <SupportTeam team={team} contacts={contacts} readiness={readiness(latest.input, hasPlan)} brief={fb.brief} countryCode={c.code} name={profile?.full_name ?? ""} />
+            <details className="rounded-2xl border border-navy-100 bg-white p-4"><summary className="cursor-pointer font-semibold">Your referral brief and booking email</summary><div className="mt-4">
             <BriefGenerator initial={{ brief: fb.brief, emailTemplate: fb.emailTemplate, matches: matches.map(m => ({ ...m, questionsToAsk: [] })), source: "rules" }} />
+            </div></details>
             <Card>
               <h3 className="text-lg font-bold">Where to find each type of help</h3>
               <div className="mt-3 grid gap-6 md:grid-cols-2">

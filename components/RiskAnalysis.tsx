@@ -30,12 +30,15 @@ export default function RiskAnalysis({ before, after, changed, ages }: { before:
         {changed && <div className="flex rounded-full bg-navy-50 p-1 text-sm" role="tablist">{(["after", "now"] as const).map(v => <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={cx("rounded-full px-3 py-1 font-semibold", view === v ? "bg-white shadow" : "text-navy-500")}>{v === "after" ? "With your choices" : "Now"}</button>)}</div>}
       </div>
       {busy && !a ? <p className="mt-3 text-sm text-navy-500">Analysing…</p> : !a ? <p className="mt-3 text-sm text-navy-500">Couldn&apos;t analyse these numbers.</p> : (
-        <div className={cx("mt-3 grid gap-3 lg:grid-cols-3", busy && "opacity-60")}>
+        <div className={cx("mt-3 space-y-2", busy && "opacity-60")}>
           {groups.map(([icon, title, cls, key]) => (
-            <div key={key} className={cx("rounded-xl border p-3", cls)}>
-              <p className="font-semibold">{icon} {title} <span className="font-normal text-navy-500">({a[key].length})</span></p>
-              <ul className="mt-2 space-y-2 text-sm">{a[key].length ? a[key].map(x => <li key={x.title}><strong>{x.title}.</strong> <span className="text-navy-700">{x.detail}</span></li>) : <li className="text-navy-500">None found.</li>}</ul>
-            </div>
+            <details key={key} className={cx("group rounded-xl border", cls)} open={key === "risks" && a[key].length > 0 && a[key].length <= 2}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-semibold">
+                <span>{icon} {a[key].length} {title.toLowerCase()}{a[key][0] ? <span className="ml-2 hidden font-normal text-navy-600 sm:inline">· {a[key][0].title}{a[key].length > 1 ? " …" : ""}</span> : null}</span>
+                <span className="text-sm text-teal-700 group-open:hidden">Show</span><span className="hidden text-sm text-teal-700 group-open:inline">Hide</span>
+              </summary>
+              <ul className="space-y-2 px-4 pb-3 text-sm">{a[key].length ? a[key].map(x => <li key={x.title}><strong>{x.title}.</strong> <span className="text-navy-700">{x.detail}</span></li>) : <li className="text-navy-500">None found.</li>}</ul>
+            </details>
           ))}
         </div>
       )}
