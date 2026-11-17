@@ -42,7 +42,7 @@ export default function RiskAnalysis({ before, after, changed, ages }: { before:
           ))}
         </div>
       )}
-      <p className="mt-2 text-xs text-navy-500">From the Investment Research Library&apos;s analysis: 300 simulated markets, today&apos;s money. Retirement figures don&apos;t include NZ Super or other pensions unless added in the Library.</p>
+      <p className="mt-2 text-xs text-navy-500">From the DebtFreedomIQ Research Library&apos;s analysis: 300 simulated markets, today&apos;s money. Retirement figures don&apos;t include NZ Super or other pensions unless added in the Library.</p>
     </Card>
   );
 }

@@ -31,7 +31,7 @@ export default function PlatformCompare({ startBalance, monthly, years: initialY
 
   return (
     <Card as="section">
-      <h2 className="text-lg font-bold">Investment platform comparison</h2>
+      <h2 className="text-lg font-bold">Fund comparison</h2>
       <p className="mt-1 text-sm text-navy-600">Same money, different platforms or funds: see what fees do over time. Replace the sample figures with each provider&apos;s current fees (from its fund update or website). A comparison of your figures, not a ranking or advice.</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <label className="text-sm">Starting amount<input type="number" min={0} value={balance} onChange={e => setBalance(num(e.target.value))} className="mt-1" /></label>

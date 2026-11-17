@@ -320,7 +320,7 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
 
           <Card as="section">
             <h2 className="text-lg font-bold">Your retirement picture</h2>
-            {!plus ? <p className="mt-1 text-sm text-navy-600">🔒 Premium Plus shows your net worth in 10 years and at retirement for every scenario, and opens the full picture in the Investment Research Library.</p> : (<>
+            {!plus ? <p className="mt-1 text-sm text-navy-600">🔒 Premium Plus shows your net worth in 10 years and at retirement for every scenario, and opens the full picture in the Research Library.</p> : (<>
               {!base.age && (
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <label className="text-sm">Your age<input type="number" min={16} max={100} value={age} onChange={e => setAge(e.target.value ? Number(e.target.value) : "")} className="mt-1" /></label>
@@ -331,7 +331,7 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
               )}
               {base.age && <p className="mt-1 text-xs text-navy-500">Age {base.age}, retiring at {base.retireAge ?? 65} (from your Financial Health check).</p>}
               <p className="mt-2 text-xs text-navy-500">Figures don&apos;t include {countryCode === "NZ" ? "NZ Super" : "the state pension"} yet. Add it in the Library for the full picture.</p>
-              {!LIBRARY_URL ? <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Set NEXT_PUBLIC_LIBRARY_URL to your Investment Research Library address to turn on the full picture.</p> : ages ? (
+              {!LIBRARY_URL ? <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Set NEXT_PUBLIC_LIBRARY_URL to your Research Library address to turn on the full picture.</p> : ages ? (
                 <div className="mt-3 flex flex-col gap-2">
                   <Button href={libraryLink(result.input, ages)!} target="_blank" rel="noopener" full>{changed ? "Full retirement picture with my choices ↗" : "See my full retirement picture ↗"}</Button>
                   {changed && <Button href={libraryLink(base, ages)!} target="_blank" rel="noopener" variant="secondary" full size="sm">Compare: if I change nothing ↗</Button>}
@@ -348,7 +348,7 @@ export default function WhatIfLab({ input: base, countryCode, plus, tryFirst }: 
       {plus && ages ? <RiskAnalysis before={base} after={result.input} changed={changed} ages={ages} />
         : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Strengths, weaknesses &amp; risks</h2><p className="mt-1 text-sm text-navy-600">{plus ? "Enter your age (in “Your retirement picture”) to see the analysis." : "🔒 Premium Plus analyses your finances now and with your choices: what's strong, what's weak, and the risks (interest rates, markets, property concentration, how long savings last)."}</p></Card>}
       {plus ? <PlatformCompare startBalance={result.input.assets.filter(a => a.type === "investments" || a.type === "retirement").reduce((t, a) => t + a.value, 0) || 10000} monthly={Math.max(0, A.monthlySurplus)} years={ages ? Math.max(5, (ages.retireAge ?? 65) - ages.age) : 20} countryCode={countryCode} fmt={f} />
-        : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Investment platform comparison</h2><p className="mt-1 text-sm text-navy-600">🔒 Premium Plus compares what different platforms&apos; and funds&apos; fees do to your investments over time.</p></Card>}
+        : <Card as="section" className="opacity-80"><h2 className="text-lg font-bold">Fund comparison</h2><p className="mt-1 text-sm text-navy-600">🔒 Premium Plus compares what different platforms&apos; and funds&apos; fees do to your investments over time.</p></Card>}
 
       {changed && mode === "expert" && <CashRunway income={A.monthlyIncome} living={A.monthlyExpenses} debt={A.monthlyDebtPayments} savings={result.input.savings} symbol={c.symbol} fmt={f} />}
 
