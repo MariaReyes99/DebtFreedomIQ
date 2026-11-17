@@ -10,6 +10,7 @@ import { track } from "@/lib/events";
 import PlanView, { type PlanData } from "@/components/PlanView";
 import GeneratePlanButton from "@/components/GeneratePlanButton";
 import FreedomStages from "@/components/FreedomStages";
+import { latestPlan } from "@/lib/plan-row";
 import { buildFreedomPlan } from "@/lib/freedom";
 import type { Choices } from "@/lib/whatif";
 import { Badge, Button, Card, PageHeader, PremiumGate, Disclaimer } from "@/components/ui";
@@ -25,7 +26,7 @@ export default async function PlanPage() {
   // Premium with a saved plan → full, editable plan
   if (user && isPremium && latest) {
     const supabase = await createClient();
-    const { data: saved } = await supabase.from("financial_plans").select("id,created_at,updated_at,strategy,scenarios,ai_summary,goals,choices,steps_done").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    const saved = await latestPlan(supabase, user.id);
     const cc = toCountryCode(latest.input.country) ?? DEFAULT_COUNTRY;
     const fp = latest.incomplete ? null : buildFreedomPlan(latest.input, (saved?.choices ?? null) as Choices | null, COUNTRIES[cc], (v: number) => money(COUNTRIES[cc], v));
     return (

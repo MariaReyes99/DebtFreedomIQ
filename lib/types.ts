@@ -16,6 +16,7 @@ export type Situation = {
   housingAtRisk: boolean;
   medicalDebt: boolean;
   distressed: boolean;
+  lostIncome?: boolean; // lost a job or income has dropped
 };
 
 export type AssessmentInput = {

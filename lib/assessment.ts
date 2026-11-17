@@ -22,7 +22,7 @@ export function sanitize(raw: unknown): AssessmentInput {
     debts: (r.debts ?? []).slice(0, 30).map(x => ({ id: str(x.id, 20) || id(), name: str(x.name) || "Debt", type: DEBT_TYPES.includes(x.type as DebtType) ? x.type as DebtType : "other", balance: n(x.balance), rate: n(x.rate, 1000), minPayment: n(x.minPayment) })),
     assets: (r.assets ?? []).slice(0, 30).map(x => ({ id: str(x.id, 20) || id(), name: str(x.name) || "Asset", type: ASSET_TYPES.includes(x.type as AssetType) ? x.type as AssetType : "other", value: n(x.value), ...(["home", "rental", "other"].includes(String(x.use)) ? { use: x.use as "home" | "rental" | "other" } : {}) })),
     savings: n(r.savings),
-    situation: { behindOnBills: !!s.behindOnBills, collectionsOrCourt: !!s.collectionsOrCourt, cantAffordFood: !!s.cantAffordFood, housingAtRisk: !!s.housingAtRisk, medicalDebt: !!s.medicalDebt, distressed: !!s.distressed },
+    situation: { behindOnBills: !!s.behindOnBills, collectionsOrCourt: !!s.collectionsOrCourt, cantAffordFood: !!s.cantAffordFood, housingAtRisk: !!s.housingAtRisk, medicalDebt: !!s.medicalDebt, distressed: !!s.distressed, lostIncome: !!s.lostIncome },
     goals: str(r.goals, 600),
     ...(n(r.age) >= 16 && n(r.age) <= 100 ? { age: Math.round(n(r.age)) } : {}),
     ...(n(r.retireAge) >= 40 && n(r.retireAge) <= 90 ? { retireAge: Math.round(n(r.retireAge)) } : {}),

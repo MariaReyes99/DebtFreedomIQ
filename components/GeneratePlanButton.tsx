@@ -12,7 +12,9 @@ export default function GeneratePlanButton({ label = "Generate my Freedom Plan" 
       <Button size="lg" disabled={pending} onClick={() => start(async () => {
         setErr("");
         const r = await fetch("/api/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ strategy: "avalanche" }) });
-        if (!r.ok) { setErr((await r.json()).error); return; }
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { setErr(j.error ?? "Couldn't build your plan."); return; }
+        if (j.warning) setErr(j.warning);
         router.refresh();
       })}>{pending ? "Building your plan…" : label}</Button>
       {err && <p role="alert" className="text-sm text-red-600">{err}</p>}

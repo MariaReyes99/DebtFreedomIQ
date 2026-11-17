@@ -12,6 +12,7 @@ import NextSteps from "@/components/NextSteps";
 import CashRunway from "@/components/CashRunway";
 import PendingCheckSaver from "@/components/PendingCheckSaver";
 import TodayActions from "@/components/TodayActions";
+import { latestPlan } from "@/lib/plan-row";
 import { buildFreedomPlan } from "@/lib/freedom";
 import type { Choices } from "@/lib/whatif";
 import { Badge, Button, Card, PageHeader, ScoreRing, StatCard } from "@/components/ui";
@@ -22,10 +23,10 @@ export default async function Dashboard() {
   const { user, displayName, isPremium, country, displayCountry } = await getSession();
   if (!user) redirect("/login?next=/dashboard");
   const supabase = await createClient();
-  const [latest, { data: history }, { data: plan }] = await Promise.all([
+  const [latest, { data: history }, plan] = await Promise.all([
     loadLatest(user.id),
     supabase.from("financial_assessments").select("created_at,health_score,stress_score").eq("user_id", user.id).order("created_at", { ascending: true }).limit(24),
-    supabase.from("financial_plans").select("id,scenarios,ai_summary,goals,updated_at,choices,steps_done").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+    latestPlan(supabase, user.id),
   ]);
   const c = latest ? COUNTRIES[toCountryCode(latest.input.country) ?? DEFAULT_COUNTRY] : country ?? displayCountry;
   const f = (v: number) => money(c, v);

@@ -46,6 +46,7 @@ export function buildFreedomPlan(base: AssessmentInput, choicesRaw: Choices | nu
   // ── Stage 1: stabilise ──────────────────────────────────────────────
   const gap = Math.max(0, -mB.monthlySurplus);
   const steps: PlanStep[] = [];
+  if (base.situation.lostIncome) steps.push({ id: "income-support", source: "essential", due: due(3), title: "Apply for income support", detail: "Support usually starts from when you apply. Also check any income or mortgage protection insurance, and redundancy pay you're owed." });
   if (gap > 0) {
     steps.push({ id: "call-mentor", source: "essential", due: due(7), title: `Call ${c.firstCall.name}${c.firstCall.phone ? ` (${c.firstCall.phone})` : ""}: free help`, detail: `${c.firstCall.what}. Take this plan with you.` });
     if (base.debts.some(d => d.balance > 0)) steps.push({ id: "call-lenders", source: "essential", due: due(7), title: "Tell your lenders now, before you miss a payment", detail: "Ask about a hardship arrangement: lower repayments, interest-only or a payment pause. Lenders have more options while you're still up to date." });

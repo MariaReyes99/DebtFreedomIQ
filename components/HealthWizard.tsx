@@ -24,6 +24,7 @@ const ASK = [
 const DEBT_TYPES: [DebtType, string][] = [["mortgage", "Mortgage / home loan"], ["credit_card", "Credit card"], ["personal_loan", "Personal loan"], ["car_loan", "Car loan"], ["bnpl", "Buy now pay later"], ["student_loan", "Student loan"], ["medical", "Medical / hospital bill"], ["tax", "Tax debt"], ["child_support", "Child support arrears"], ["business", "Business debt"], ["family", "Family / friends"], ["other", "Other"]];
 const ASSET_TYPES: [AssetType, string][] = [["property", "Property"], ["vehicle", "Vehicle"], ["investments", "Investments / shares"], ["retirement", "Retirement / KiwiSaver / super"], ["business", "Business"], ["other", "Other"]];
 const SITUATION: [keyof AssessmentInput["situation"], string][] = [
+  ["lostIncome", "I've lost my job or my income has dropped"],
   ["behindOnBills", "I'm behind on bills or loan repayments"],
   ["collectionsOrCourt", "I'm getting debt collector calls or court notices"],
   ["cantAffordFood", "I'm struggling to afford food"],

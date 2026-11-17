@@ -50,8 +50,26 @@ export function pairProperties(debts: DebtItem[], assets: AssetItem[]) {
 }
 
 /** Concrete, numbers-based options to improve monthly cash flow. General information, not advice. */
+
+const INCOME_SUPPORT: Partial<Record<string, string>> = {
+  NZ: "Apply to Work and Income for Jobseeker Support and the Accommodation Supplement (MyMSD online or 0800 559 009). Ask about hardship grants too",
+  AU: "Apply to Centrelink (Services Australia) for JobSeeker Payment and Rent Assistance",
+  GB: "Apply for Universal Credit (gov.uk) and check New Style Jobseeker's Allowance if you've paid National Insurance",
+  US: "Apply for unemployment insurance through your state's unemployment office, and check SNAP and other benefits",
+  PH: "Check the SSS unemployment benefit if you were involuntarily separated, and ask your LGU and DSWD about assistance",
+};
 export function buildSolutions(i: AssessmentInput, m: Metrics, c: Country, fmt: (n: number) => string): Solution[] {
   const out: Solution[] = [];
+  if (i.situation.lostIncome) {
+    const hasMortgage = i.debts.some(d => d.type === "mortgage" && d.balance > 0);
+    out.push({ id: "lost-income", kind: "support", monthly: 0, title: "Lost your job or income? Get income support and tell your lenders now",
+      detail: [
+        `${INCOME_SUPPORT[c.code] ?? "Apply for government income support"} this week: support usually starts from when you apply, not when you lost your job.`,
+        hasMortgage || i.debts.length ? "Tell each lender you've lost your income and ask for a hardship arrangement before you miss a payment." : "",
+        "Check any income protection, mortgage protection or redundancy insurance you hold, including through your bank or employer, and any redundancy pay you're owed.",
+        c.code === "NZ" ? "If things are tight for a while, a KiwiSaver hardship withdrawal may be possible." : "",
+      ].filter(Boolean).join(" ") }, );
+  }
   const gap = Math.max(0, -m.monthlySurplus);
   const pairs = pairProperties(i.debts, i.assets);
   const hasRentIncome = i.incomes.some(x => /rent|board/i.test(x.source) && x.amount > 0);

@@ -42,6 +42,7 @@ export function calculate(i: AssessmentInput): Metrics {
   let stress = (100 - sSavings) * 0.3 + (100 - sDti) * 0.25 + (100 - emergencyScore) * 0.2 + highInterestShare * 100 * 0.1;
   if (monthlySurplus < 0) stress += 10;
   if (s.behindOnBills) stress += 8;
+  if (s.lostIncome) stress += 8;
   if (s.collectionsOrCourt) stress += 12;
   if (s.cantAffordFood) stress += 15;
   if (s.housingAtRisk) stress += 15;
@@ -75,7 +76,10 @@ export function ruleAdvice(i: AssessmentInput, m: Metrics, fmt: (n: number) => s
     recs.push({ impact: "high", category: "Legal", title: "Respond to collection or court notices now", detail: "Don't ignore them. Get free legal advice this week. Deadlines matter, and you may have rights you don't know about." });
 
   // Concrete options with estimated monthly impact
-  const options = buildSolutions(i, m, c, fmt).filter(o => o.kind !== "fix");
+  const all = buildSolutions(i, m, c, fmt);
+  const lost = all.find(o => o.id === "lost-income");
+  if (lost) recs.unshift({ impact: "high", category: "Income", title: lost.title, detail: lost.detail });
+  const options = all.filter(o => o.kind !== "fix" && o.id !== "lost-income");
   for (const o of options) {
     if (recs.length >= 5) break;
     const impact: Recommendation["impact"] = o.monthly >= Math.max(200, gap * 0.15) ? "high" : o.monthly > 0 ? "medium" : "medium";
