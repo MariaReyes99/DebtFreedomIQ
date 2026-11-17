@@ -15,6 +15,7 @@ import { latestPlan } from "@/lib/plan-row";
 import { buildFreedomPlan } from "@/lib/freedom";
 import type { Choices } from "@/lib/whatif";
 import { Badge, Button, Card, PageHeader, ScoreRing, StatCard } from "@/components/ui";
+import ShareStory from "@/components/ShareStory";
 
 export const metadata = { title: "Home" };
 
@@ -165,6 +166,7 @@ export default async function Dashboard() {
           <Link href="/health" className="mt-3 inline-block text-sm font-semibold text-teal-700">See full results →</Link>
         </Card>
       </div>
+      <div className="mt-6"><ShareStory /></div>
     </div>
   );
 }

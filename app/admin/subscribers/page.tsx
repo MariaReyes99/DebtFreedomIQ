@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isAdmin, adminClient } from "@/lib/session";
 import { Badge, Card, PageHeader, StatCard } from "@/components/ui";
+import AdminNav from "@/components/AdminNav";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Subscribers" };
@@ -9,7 +10,7 @@ export const metadata = { title: "Subscribers" };
 type Sub = { id: string; user_id: string; tier: string; status: string; provider: string; provider_ref: string | null; amount: number | null; currency: string | null; current_period_end: string | null; past_due_since: string | null; reminders_sent: number | null; cancelled_at: string | null; created_at: string };
 type Pay = { user_id: string; subscription_id: string | null; amount: number; currency: string | null; status: string; created_at: string };
 
-const FILTERS = [["all", "All"], ["active", "Paying"], ["past_due", "On hold"], ["cancelled", "Unsubscribed"], ["expired", "Ended"], ["test", "Test (no card)"], ["waiver", "Free hardship access"]] as const;
+const FILTERS = [["all", "All"], ["active", "Paying"], ["past_due", "On hold"], ["cancelled", "Unsubscribed"], ["expired", "Ended"], ["test", "Test (no card)"], ["waiver", "Free access (hardship or given)"]] as const;
 const d = (s: string | null) => (s ? new Date(s).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "—");
 const amt = (minor: number, cur: string | null) => `${(cur ?? "").toUpperCase()} ${(minor / 100).toFixed(2)}`;
 
@@ -28,10 +29,10 @@ export default async function Subscribers({ searchParams }: { searchParams: Prom
   const payments = (pays ?? []) as Pay[];
   const all = (subs ?? []) as Sub[];
   const isTest = (s: Sub) => s.provider_ref?.startsWith("test_");
-  const kind = (s: Sub) => (s.provider === "waiver" ? "waiver" : isTest(s) ? "test" : s.status);
+  const kind = (s: Sub) => (s.provider === "waiver" || s.provider === "complimentary" ? "waiver" : isTest(s) ? "test" : s.status);
 
   // Summary (real payments only; test and free hardship access excluded)
-  const real = all.filter(s => s.provider !== "waiver" && !isTest(s));
+  const real = all.filter(s => s.provider !== "waiver" && s.provider !== "complimentary" && !isTest(s));
   const paid = payments.filter(p => p.status === "paid");
   const revenue: Record<string, number> = {};
   paid.forEach(p => { const c = (p.currency ?? "").toUpperCase(); revenue[c] = (revenue[c] || 0) + p.amount; });
@@ -58,10 +59,10 @@ export default async function Subscribers({ searchParams }: { searchParams: Prom
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <PageHeader eyebrow="Admin" title="Subscribers & payments">Who has subscribed, whether they&apos;re paying, and what you&apos;ve earned.</PageHeader>
-      <p className="-mt-4 mb-6 text-sm"><Link href="/admin" className="font-semibold text-teal-700">← Back to insights</Link></p>
+      <AdminNav current="/admin/subscribers" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Paying now" value={real.filter(s => s.status === "active").length} sub={`${real.filter(s => s.status === "active" && s.tier === "premium_plus").length} monthly · ${real.filter(s => s.status === "active" && s.tier === "premium").length} one-time`} tone="good" />
+        <StatCard label="Paying now" value={real.filter(s => s.status === "active").length} sub={`${real.filter(s => s.status === "active" && s.tier === "premium_plus").length} Premium Plus · ${real.filter(s => s.status === "active" && s.tier === "premium").length} one-time`} tone="good" />
         <StatCard label="On hold (not paying)" value={real.filter(s => s.status === "past_due").length} tone={real.some(s => s.status === "past_due") ? "warn" : "navy"} sub="Reminders are being sent" />
         <StatCard label="Unsubscribed / ended" value={real.filter(s => s.status === "cancelled" || s.status === "expired").length} />
         <StatCard label="Received this month" value={fmtMap(monthRev)} sub={`All time: ${fmtMap(revenue)}`} />
@@ -86,7 +87,7 @@ export default async function Subscribers({ searchParams }: { searchParams: Prom
                 const card = s.provider === "stripe" ? (p?.stripe_customer_id ? "Stripe" : "—") : hasCard.has(s.user_id) ? "Yes" : "No";
                 return (
                   <tr key={s.id} className="border-t border-navy-100 align-top">
-                    <td className="py-2"><div className="font-semibold">{p?.full_name || "—"}</div><div className="text-navy-500">{p?.email}</div><div className="text-xs text-navy-400">{p?.country}</div></td>
+                    <td className="py-2"><Link href={`/admin/customers/${s.user_id}`} className="font-semibold text-teal-700 hover:underline">{p?.full_name || "(no name)"}</Link><div className="text-navy-500">{p?.email}</div><div className="text-xs text-navy-400">{p?.country}</div></td>
                     <td>{s.tier === "premium" ? "Premium (one-time)" : "Premium Plus (yearly)"}</td>
                     <td>{badge(s)}</td>
                     <td>{s.amount != null ? amt(s.amount, s.currency) : "—"}</td>

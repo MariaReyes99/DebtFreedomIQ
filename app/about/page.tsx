@@ -36,7 +36,7 @@ export default function AboutPage() {
             <li><strong>AI processing:</strong> library questions, and figures used to write explanations and plans, are sent to our AI provider (OpenAI). Before a question is sent we remove details such as email addresses, phone numbers, tax numbers, bank account numbers and street addresses. Messages containing card details are blocked and never processed.</li>
             <li><strong>Question allowances</strong> are counted per account, or per anonymised (hashed) internet address for visitors who aren&apos;t logged in.</li>
             <li>We don&apos;t sell your data, show ads, or share it with lenders or debt companies.</li>
-            <li>You can ask for a copy of your data, correct it, or delete your account at any time.</li>
+            <li>You can download a copy of your data or delete your account at any time from <Link href="/account?tab=data" className="font-semibold text-teal-700 underline">Account → My data</Link>.</li>
           </ul>
           <p className="text-sm">Read the full <Link href="/privacy" className="font-semibold text-teal-700 underline">Privacy policy</Link> and <Link href="/terms" className="font-semibold text-teal-700 underline">Terms</Link>.</p>
         </Card>

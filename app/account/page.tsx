@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DataPanel from "./DataPanel";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -9,7 +10,7 @@ import { getSubs, listCards } from "@/lib/billing";
 import { Badge, Button, Card, PageHeader, cx } from "@/components/ui";
 
 export const metadata = { title: "My account" };
-const TABS = [["profile", "Profile"], ["password", "Password"], ["billing", "Plan & billing"], ["history", "My checks"]] as const;
+const TABS = [["profile", "Profile"], ["password", "Password"], ["billing", "Plan & billing"], ["history", "My checks"], ["data", "My data"]] as const;
 
 export default async function Account({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { user, profile, country, tier, displayName } = await getSession();
@@ -35,6 +36,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
       {tab === "profile" && <Card><ProfileForm name={profile?.full_name ?? ""} email={user.email ?? ""} country={country?.code ?? null} /></Card>}
       {tab === "password" && <Card><PasswordForm /><p className="mt-4 text-sm text-navy-500">Forgot your current password? Log out and use &quot;Forgot password?&quot; on the login page.</p></Card>}
       {tab === "billing" && <BillingPanel subs={subs} cards={cards} payments={payments ?? []} stripe={paymentsMode() === "stripe"} plusEnabled={process.env.PREMIUM_PLUS_ENABLED !== "false"} />}
+      {tab === "data" && <DataPanel />}
       {tab === "history" && (
         <Card>
           <h2 className="text-lg font-bold">My Financial Health checks</h2>

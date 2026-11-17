@@ -43,6 +43,7 @@ export function buildTeam(i: AssessmentInput, m: Metrics, matches: { category: H
         add(short, `You're short ${fmt(short)} every month`);
         add(runway !== null, runway === 0 ? "You have no savings to cover the gap" : `Your savings last about ${runway!.toFixed(1)} months at this rate`);
         add(i.situation.behindOnBills, "You're behind on bills");
+        add(i.situation.disconnection, "You've had a disconnection notice");
         add(i.situation.cantAffordFood, "You're struggling to afford food");
         add(i.situation.lostIncome, "You've lost your job or income");
         break;

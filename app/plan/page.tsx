@@ -14,6 +14,8 @@ import { latestPlan } from "@/lib/plan-row";
 import { buildFreedomPlan } from "@/lib/freedom";
 import type { Choices } from "@/lib/whatif";
 import { Badge, Button, Card, PageHeader, PremiumGate, Disclaimer } from "@/components/ui";
+import CheckoutButton from "@/components/CheckoutButton";
+import { waiverEnabled } from "@/lib/crisis";
 
 export const metadata = { title: "My Freedom Plan" };
 
@@ -87,6 +89,7 @@ export default async function PlanPage() {
       <PremiumGate title="Unlock your full Freedom Plan" price={price}>
         <PlanView countryCode={cc} plan={preview} editable={false} hasConsumerDebt={m.consumerDebts > 0} />
       </PremiumGate>
+      {waiverEnabled() && user && <div className="mt-3 text-center text-sm"><span className="text-navy-600">Can&apos;t afford it right now? </span><CheckoutButton endpoint="/api/waiver" label="Get Premium free" variant="ghost" /></div>}
       <Disclaimer className="mt-6" />
     </div>
   );

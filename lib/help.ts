@@ -15,7 +15,7 @@ export function matchHelp(i: AssessmentInput, m: Metrics): { category: HelpCateg
   const out: { category: HelpCategory; why: string; p: number }[] = [];
   const has = (t: string) => i.debts.some(d => d.type === t && d.balance > 0);
   if (i.situation.collectionsOrCourt) out.push({ category: "lawyer", p: 100, why: "You're receiving collection or court notices, and free legal advice can protect your rights." });
-  if (m.monthlySurplus < 0 || i.situation.behindOnBills || i.situation.cantAffordFood) out.push({ category: "budget_adviser", p: 95, why: "Your spending is higher than your income or bills are overdue. A free budget adviser can help quickly." });
+  if (m.monthlySurplus < 0 || i.situation.behindOnBills || i.situation.disconnection || i.situation.cantAffordFood) out.push({ category: "budget_adviser", p: 95, why: "Your spending is higher than your income or bills are overdue. A free budget adviser can help quickly." });
   if (m.consumerDebts > 0 && (m.debtToIncome > 0.2 || m.highInterestShare > 0.3 || i.debts.filter(d => d.type !== "mortgage").length >= 3)) out.push({ category: "debt_coach", p: 90, why: "You have several or high-interest debts. A debt coach can help you prioritise and negotiate." });
   if (has("mortgage")) out.push({ category: "mortgage_adviser", p: 70, why: "You have a mortgage. A rate or structure review could save money each month." });
   if (has("business") || has("tax") || i.assets.some(a => a.type === "business") || i.assets.filter(a => a.type === "property").length >= 2) out.push({ category: "accountant", p: 65, why: "Business, tax or rental-property finances benefit from an accountant." });

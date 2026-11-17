@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { isAdmin, adminClient } from "@/lib/session";
 import { Card, PageHeader, StatCard } from "@/components/ui";
 import BillingRunner from "@/components/BillingRunner";
+import AdminNav from "@/components/AdminNav";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Insights" };
@@ -34,11 +35,11 @@ export default async function Admin() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <PageHeader eyebrow="Admin" title="Learning from your first 100 users">Goal: 100 people through Financial Health. Then decide what to build and charge for.</PageHeader>
-      <Link href="/admin/subscribers" className="mb-6 inline-flex rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700">💳 Subscribers &amp; payments →</Link>
+      <AdminNav current="/admin" />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="People completed check" value={`${people} / 100`} tone={people >= 100 ? "good" : "navy"} />
         <StatCard label="Avg health score" value={avg(healths)} />
-        <StatCard label="Premium buyers" value={(subs ?? []).filter(s => s.provider !== "waiver").length} sub={`${(subs ?? []).filter(s => s.provider === "waiver").length} took free hardship access`} />
+        <StatCard label="Premium buyers" value={(subs ?? []).filter(s => s.provider !== "waiver" && s.provider !== "complimentary").length} sub={`${(subs ?? []).filter(s => s.provider === "waiver").length} took free hardship access`} />
         <StatCard label="Check → Premium" value={people ? `${(((subs ?? []).length / people) * 100).toFixed(1)}%` : "—"} />
       </div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

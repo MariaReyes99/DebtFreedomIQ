@@ -12,8 +12,10 @@ import { Suspense } from "react";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: { default: "DebtFreedomIQ — From Financial Stress to Financial Freedom", template: "%s · DebtFreedomIQ" },
-  description: "Free Financial Health check with your score, net worth and debt-to-income ratio, plus step-by-step action plans and guided access to the right help.",
-  openGraph: { title: "DebtFreedomIQ", description: "See the result of every move before you make it.", images: ["/logo.png"] },
+  description: "Your financial triage and decision-support platform. A free Financial Health check, the free help near you, a dated plan to get debt-free, and side-by-side comparisons before big money decisions. NZ, Australia, Philippines, US and UK.",
+  openGraph: { type: "website", siteName: "DebtFreedomIQ", title: "DebtFreedomIQ — clarity, options and a pathway to help", description: "Free Financial Health check, free local help, and decision support for big money choices.", images: ["/logo.png"] },
+  twitter: { card: "summary_large_image", title: "DebtFreedomIQ", description: "Clarity, options and a pathway to help when money is tight." },
+  robots: { index: true, follow: true },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#06112a" };
 

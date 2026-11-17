@@ -233,3 +233,50 @@ grant update (full_name, country, city) on public.profiles to authenticated;
 
 -- Tell the Supabase API to pick up the new tables and columns straight away
 notify pgrst, 'reload schema';
+
+-- ── Customer support, testimonials and the admin audit log (Nov 2026). Safe to run again. ──
+create table if not exists public.support_messages (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users on delete set null,
+  email text not null,
+  name text,
+  topic text not null default 'other',
+  message text not null,
+  status text not null default 'open' check (status in ('open','resolved')),
+  internal_note text,
+  country text,
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz
+);
+create index if not exists support_messages_status_idx on public.support_messages (status, created_at desc);
+
+create table if not exists public.testimonials (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users on delete cascade,
+  display_name text,
+  country text,
+  story text not null,
+  outcome text,
+  consent boolean not null default false,
+  approved boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.admin_audit (
+  id bigserial primary key,
+  admin_email text not null,
+  action text not null,
+  target_user uuid,
+  detail jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- Server only: no policies, so the app's public keys can't read or write these.
+alter table public.support_messages enable row level security;
+alter table public.testimonials enable row level security;
+alter table public.admin_audit enable row level security;
+grant all on public.support_messages, public.testimonials, public.admin_audit to service_role;
+grant usage, select on all sequences in schema public to service_role;
+-- Admins can give complimentary access; keep the provider list open-ended (mock, stripe, waiver, test, complimentary).
+
+notify pgrst, 'reload schema';

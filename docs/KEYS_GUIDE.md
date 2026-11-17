@@ -95,7 +95,7 @@ The webhook is how Stripe tells the app "this person has paid".
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` on your computer. Your real address (e.g. `https://debtfreedomiq.com`) in Vercel |
 | `ADMIN_EMAILS` | Your email. Lets you see `/admin` (sales, donations, feedback). Separate several emails with commas |
-| `HARDSHIP_WAIVER` | `true` shows the "Can't afford it? Get it free" button. `false` hides it |
+| `HARDSHIP_WAIVER` | On by default: shows "Can't afford it? Get it free". Set to `false` to hide it |
 | `PAYMENTS_MODE` | `mock` (demo checkout, default) or `stripe` |
 
 ---

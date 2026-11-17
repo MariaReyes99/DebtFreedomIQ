@@ -14,6 +14,8 @@ import CopyBox from "@/components/CopyBox";
 import HelpTriage, { type Need } from "@/components/HelpTriage";
 import SupportTeam from "@/components/SupportTeam";
 import { buildTeam, readiness } from "@/lib/supportteam";
+import { crisisReasons, waiverEnabled } from "@/lib/crisis";
+import CheckoutButton from "@/components/CheckoutButton";
 import { buildSolutions } from "@/lib/solutions";
 import { latestPlan } from "@/lib/plan-row";
 import { createClient } from "@/lib/supabase/server";
@@ -84,8 +86,11 @@ export default async function HelpPage() {
   ].filter(n => n.items.length > 0);
 
   // Premium: the support team, ranked by priority, with readiness
-  const team = isPremium && latest ? buildTeam(latest.input, latest.metrics, matches, buildSolutions(latest.input, latest.metrics, c, fmtFor(c)), fmtFor(c)) : [];
-  const hasPlan = isPremium && latest && user ? !!(await latestPlan(await createClient(), user.id).catch(() => null)) : false;
+  // Crisis access: if they told us they're in crisis, the support team and referral package are free
+  const crisis = !isPremium && latest ? crisisReasons(latest.input) : [];
+  const teamOpen = isPremium || crisis.length > 0;
+  const team = teamOpen && latest ? buildTeam(latest.input, latest.metrics, matches, buildSolutions(latest.input, latest.metrics, c, fmtFor(c)), fmtFor(c)) : [];
+  const hasPlan = teamOpen && latest && user ? !!(await latestPlan(await createClient(), user.id).catch(() => null)) : false;
   const contacts = Object.fromEntries(team.map(t => [t.category, contactFor(t.category)]));
 
   return (
@@ -127,14 +132,22 @@ export default async function HelpPage() {
 
       {/* Premium */}
       <section aria-labelledby="matched" className="mt-10">
-        <h2 id="matched" className="mb-3 text-xl font-bold">Your financial support team <Badge tone="navy" className="ml-2 align-middle">Premium</Badge></h2>
-        {!isPremium ? (
+        <h2 id="matched" className="mb-3 text-xl font-bold">Your financial support team {crisis.length ? <Badge tone="teal" className="ml-2 align-middle">Free for you</Badge> : <Badge tone="navy" className="ml-2 align-middle">Premium</Badge>}</h2>
+        {crisis.length > 0 && (
+          <p className="mb-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-[15px] text-teal-900">
+            💚 <strong>This is free for you.</strong> You told us about {crisis.join(", ")}. Your support team, referral package and checklist cost nothing: getting you to the right person comes first.
+          </p>
+        )}
+        {!teamOpen ? (
+          <>
           <PremiumGate title="Get your financial support team" price={price}>
             <div className="grid gap-4 md:grid-cols-2">
               {["Budget Adviser", "Debt Coach", "Mortgage Adviser", "Lawyer"].map(t => <div key={t} className="rounded-xl border p-5"><p className="text-lg font-bold">{t}</p><p className="mt-2">Why this helps you, and three questions to ask at your first appointment…</p></div>)}
               <div className="rounded-xl border p-5 md:col-span-2"><p className="font-bold">Your personalised referral brief</p><p className="mt-2">Monthly position · Debts · Assets · Goals · What I&apos;d like help with…</p></div>
             </div>
           </PremiumGate>
+          {waiverEnabled() && user && <div className="mt-3 text-center text-sm"><span className="text-navy-600">Can&apos;t afford it right now? </span><CheckoutButton endpoint="/api/waiver" label="Get Premium free" variant="ghost" /></div>}
+          </>
         ) : !latest || !fb ? (
           <Card className="text-center"><p>Do your Financial Health check first so we can match you.</p><Button href="/health" className="mt-3">Start the check</Button></Card>
         ) : (

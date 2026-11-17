@@ -30,7 +30,7 @@ export default async function Header() {
         <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
           <Link href="/" className="flex items-center gap-3" aria-label="DebtFreedomIQ home">
             <Image src="/logo.png" alt="DebtFreedomIQ" width={170} height={37} priority className="h-8 w-auto sm:h-9" />
-            <span className="hidden border-l-2 border-teal-400 pl-3 text-xs font-medium leading-tight text-navy-500 2xl:block">The Intelligence Behind<br />Every Debt Decision.</span>
+            <span className="hidden border-l-2 border-teal-400 pl-3 text-xs font-medium leading-tight text-navy-500 2xl:block">Financial triage &amp;<br />decision support.</span>
           </Link>
           <NavLinks loggedIn={Boolean(user)} />
           <div className="flex items-center gap-2">

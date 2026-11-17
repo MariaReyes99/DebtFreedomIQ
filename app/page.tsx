@@ -28,9 +28,9 @@ export default async function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(19,167,150,0.35),transparent_55%)]" aria-hidden />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-2 lg:py-24">
           <div>
-            <Badge tone="teal">Step-by-step financial guidance</Badge>
+            <Badge tone="teal">Financial triage &amp; decision support</Badge>
             <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">From financial stress to <span className="text-teal-300">financial freedom.</span></h1>
-            <p className="mt-5 max-w-xl text-lg text-navy-100"><strong className="text-white">See the result of every move before you make it.</strong> Start with your free Financial Health check, then test your options: sell or keep, refinance, use savings, and see your debts, net worth and retirement change.</p>
+            <p className="mt-5 max-w-xl text-lg text-navy-100"><strong className="text-white">Clarity, options and a pathway to help.</strong> Start with a free check that shows where you stand and who can help today. When a big decision is coming, compare selling, refinancing, renting out or downsizing before you make the move.</p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <Link href="/health" className="group rounded-2xl bg-teal-500 p-4 text-white shadow-lg shadow-teal-900/30 hover:bg-teal-600">
                 <p className="text-sm font-semibold text-teal-50">I&apos;m struggling with money</p>

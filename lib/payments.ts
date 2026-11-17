@@ -14,7 +14,7 @@ export const paymentsMode = () => (process.env.PAYMENTS_MODE?.trim().startsWith(
 export type PaidTier = "premium" | "premium_plus";
 export const priceFor = (c: Country, tier: PaidTier) => (tier === "premium" ? c.premiumPrice : c.plusPrice);
 
-type GrantOpts = { userId: string; tier: PaidTier; provider: "mock" | "stripe" | "waiver"; ref: string; amount: number; currency: string; periodEnd?: Date | null; saveDemoCard?: boolean; testNoCard?: boolean };
+type GrantOpts = { userId: string; tier: PaidTier; provider: "mock" | "stripe" | "waiver" | "complimentary"; ref: string; amount: number; currency: string; periodEnd?: Date | null; saveDemoCard?: boolean; testNoCard?: boolean };
 
 /** Plain-English reason the server can't write to the database (shown at checkout, logged in the terminal). */
 export function secretKeyProblem(): string | null {

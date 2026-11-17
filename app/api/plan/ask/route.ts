@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
+import { redactPII } from "@/research/lib/guardrails/pii";
 import { loadLatest } from "@/lib/assessment";
 import { scenariosFor } from "@/lib/plan-server";
 import { aiAnswer, aiEnabled } from "@/lib/ai";
@@ -16,7 +17,11 @@ export async function POST(req: Request) {
   if (!latest) return NextResponse.json({ error: "Complete your Financial Health check first." }, { status: 400 });
   if (!aiEnabled()) return NextResponse.json({ answer: "The AI assistant isn't switched on yet (the site owner needs to add an OpenAI key). In the meantime, try the scenario cards above, or ask a free financial mentor/counsellor in Find Help." });
   const c = COUNTRIES[toCountryCode(latest.input.country) ?? DEFAULT_COUNTRY];
-  const answer = await aiAnswer(String(question), latest.input, latest.metrics, c, scenariosFor(latest.input, latest.metrics, "avalanche"));
+  // Remove personal details (emails, phone, tax and account numbers) before the question goes to the AI provider
+  const pii = redactPII(String(question).slice(0, 1000));
+  if (pii.blocked) return NextResponse.json({ answer: pii.userNotice ?? "Please don't share card details here. Your message wasn't sent." });
+  const safe = pii.clean;
+  const answer = await aiAnswer(safe, latest.input, latest.metrics, c, scenariosFor(latest.input, latest.metrics, "avalanche"));
   await track("plan_question", { userId: user.id, country: c.code });
   return NextResponse.json({ answer: answer ?? "Sorry, I couldn't answer that right now. Please try again shortly." });
 }

@@ -26,6 +26,7 @@ const ASSET_TYPES: [AssetType, string][] = [["property", "Property"], ["vehicle"
 const SITUATION: [keyof AssessmentInput["situation"], string][] = [
   ["lostIncome", "I've lost my job or my income has dropped"],
   ["behindOnBills", "I'm behind on bills or loan repayments"],
+  ["disconnection", "I've had a power, water or phone disconnection notice"],
   ["collectionsOrCourt", "I'm getting debt collector calls or court notices"],
   ["cantAffordFood", "I'm struggling to afford food"],
   ["housingAtRisk", "I'm worried about losing my home (arrears, eviction, mortgagee sale)"],

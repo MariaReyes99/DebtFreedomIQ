@@ -17,6 +17,7 @@ export type Situation = {
   medicalDebt: boolean;
   distressed: boolean;
   lostIncome?: boolean; // lost a job or income has dropped
+  disconnection?: boolean; // power, water or phone disconnection notice
 };
 
 export type AssessmentInput = {

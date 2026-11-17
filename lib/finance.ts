@@ -33,7 +33,7 @@ export function calculate(i: AssessmentInput): Metrics {
 
   let health = sDti * 0.3 + sSavings * 0.2 + emergencyScore * 0.2 + sLeverage * 0.15 + sHighInterest * 0.15;
   const s = i.situation;
-  if (s.behindOnBills) health -= 8;
+  if (s.behindOnBills || s.disconnection) health -= 8;
   if (s.collectionsOrCourt) health -= 12;
   if (s.cantAffordFood || s.housingAtRisk) health -= 10;
   const healthScore = Math.round(clamp(health));
@@ -41,7 +41,7 @@ export function calculate(i: AssessmentInput): Metrics {
   // Stress (higher = more stress)
   let stress = (100 - sSavings) * 0.3 + (100 - sDti) * 0.25 + (100 - emergencyScore) * 0.2 + highInterestShare * 100 * 0.1;
   if (monthlySurplus < 0) stress += 10;
-  if (s.behindOnBills) stress += 8;
+  if (s.behindOnBills || s.disconnection) stress += 8;
   if (s.lostIncome) stress += 8;
   if (s.collectionsOrCourt) stress += 12;
   if (s.cantAffordFood) stress += 15;

@@ -1,3 +1,4 @@
+import "server-only";
 import { SUPABASE_URL, SUPABASE_PUBLIC_KEY, SUPABASE_SECRET } from "../env";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createAdmin } from "@supabase/supabase-js";
