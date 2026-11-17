@@ -36,3 +36,5 @@ label { @apply text-sm font-semibold text-navy-800; }
 
 /* Larger text, chosen with the "AA" button (remembered per device) */
 html.large-text { font-size: 118.75%; }
+
+@keyframes navbar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }

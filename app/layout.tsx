@@ -6,6 +6,8 @@ import { BackBar, ScrollButtons } from "@/components/PageTools";
 import JourneyBar from "@/components/JourneyBar";
 import BottomNavServer from "@/components/BottomNavServer";
 import { textSizeScript } from "@/components/TextSize";
+import NavProgress from "@/components/NavProgress";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
@@ -21,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head><script dangerouslySetInnerHTML={{ __html: textSizeScript }} /></head>
       <body className="min-h-screen font-sans">
         <a href="#main" className="sr-only sr-only-focusable">Skip to content</a>
+        <Suspense fallback={null}><NavProgress /></Suspense>
         <Header />
         <JourneyBar />
         <main id="main" className="pb-20 lg:pb-0"><BackBar />{children}</main>
