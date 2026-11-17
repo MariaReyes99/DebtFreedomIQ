@@ -165,30 +165,46 @@ export default function DecisionDashboard({ base, scenarios, picks, metersNow, m
         );
       })()}
 
-      {/* 5. Side-by-side comparison */}
+      {/* 5. Side-by-side comparison, in plain words */}
       <Card as="section" id="compare" className="scroll-mt-24">
         <h3 className="text-lg font-bold">Compare the options</h3>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead><tr className="text-left text-navy-500"><th className="py-2 font-normal">Scenario</th><th className="text-right font-normal">Each month</th><th className="text-right font-normal">Owed in 10 yrs</th>{plus && <th className="text-right font-normal">Position in 10 yrs</th>}<th className="text-center font-normal">Risk</th><th className="font-normal">Score</th><th /></tr></thead>
-            <tbody>
-              {ranked.map((s, k) => {
-                const rt = riskTone(s.risk);
-                return (
-                  <tr key={s.key} className={cx("border-t border-navy-100", s.key === best.key && "bg-teal-50/60")}>
-                    <td className="py-2.5 pr-2"><span className="mr-1" aria-hidden>{s.icon}</span><span className={cx(s.key === best.key && "font-bold")}>{s.label}</span>{k === 0 && s.key !== "keep" && <Badge tone="teal" className="ml-2">Best</Badge>}</td>
-                    <td className={cx("whitespace-nowrap text-right font-semibold", s.surplus >= 0 ? "text-emerald-700" : "text-red-700")}>{fmt(s.surplus)}</td>
-                    <td className="whitespace-nowrap text-right">{fmt(s.owed10)}</td>
-                    {plus && <td className="whitespace-nowrap text-right">{s.position10 !== null ? fmt(s.position10) : "—"}</td>}
-                    <td className={cx("whitespace-nowrap px-2 text-center font-semibold", rt.cls)}>{rt.dot} {rt.label}</td>
-                    <td className="w-40"><div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-navy-100"><div className={cx("h-full rounded-full", s.scores.overall >= 70 ? "bg-emerald-500" : s.scores.overall >= 45 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${s.scores.overall}%` }} /></div><span className="w-7 text-right font-bold">{s.scores.overall}</span></div></td>
-                    <td className="pl-2 text-right">{s.key !== "keep" && <button type="button" onClick={() => onTry(s)} className="rounded-full border border-teal-300 px-3 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50">Try</button>}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <p className="mt-1 text-sm text-navy-600">Best first. Each score is out of 100: how much of your monthly gap it closes, how much it lowers your risk, what it does to your wealth, and how easy it is.</p>
+        <ol className="mt-4 space-y-3">
+          {ranked.map((s, k) => {
+            const rt = riskTone(s.risk), isKeep = s.key === "keep";
+            const scoreWord = s.scores.overall >= 70 ? "Strong" : s.scores.overall >= 45 ? "Fair" : "Weak";
+            const month = s.surplus >= 0 ? <>leaves you <strong className="text-emerald-700">{fmt(s.surplus)} spare</strong> each month</> : <>leaves you <strong className="text-red-700">{fmt(-s.surplus)} short</strong> each month</>;
+            const vs = !isKeep && keep.surplus < s.surplus ? ` (${fmt(s.surplus - keep.surplus)} better than now)` : "";
+            return (
+              <li key={s.key} className={cx("rounded-2xl border p-4", s.key === best.key ? "border-2 border-teal-400 bg-teal-50/50" : isKeep ? "border-dashed border-navy-200 bg-navy-50/40" : "border-navy-100")}>
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold"><span className="mr-1 text-navy-400">{k + 1}.</span><span className="mr-1" aria-hidden>{s.icon}</span>{s.label}{s.key === best.key && <Badge tone="teal" className="ml-2">Best</Badge>}</p>
+                    <p className="mt-1 text-[15px] text-navy-700">{isKeep ? "If nothing changes, this " : "This "}{month}{vs}.</p>
+                    {!isKeep && (() => {
+                      const downs: string[] = [];
+                      if (s.owed10 > keep.owed10 + 1000) downs.push(`you'd still owe ${fmt(s.owed10 - keep.owed10)} more in 10 years`);
+                      if (s.position10 !== null && keep.position10 !== null && s.position10 < keep.position10 - 1000) downs.push(`you'd be ${fmt(keep.position10 - s.position10)} worse off in 10 years`);
+                      if (s.risk > keep.risk) downs.push("your financial risk goes up");
+                      if (!downs.length) return null;
+                      return <p className="mt-1 text-sm text-amber-800">⚠️ Trade-off: {downs.join(", and ")}{s.scores.overall < keep.scores.overall ? ". That's why it scores below keeping things as they are." : "."}</p>;
+                    })()}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right"><p className="text-2xl font-bold leading-none">{s.scores.overall}<span className="text-sm font-normal text-navy-500">/100</span></p><p className={cx("text-xs font-semibold", s.scores.overall >= 70 ? "text-emerald-700" : s.scores.overall >= 45 ? "text-amber-700" : "text-red-700")}>{scoreWord}</p></div>
+                    {!isKeep && <button type="button" onClick={() => onTry(s)} className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700">Try this</button>}
+                  </div>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                  <div className="rounded-xl bg-white p-2.5 ring-1 ring-navy-100"><dt className="text-xs text-navy-500">Each month</dt><dd className={cx("font-bold", s.surplus >= 0 ? "text-emerald-700" : "text-red-700")}>{s.surplus >= 0 ? "+" : "−"}{fmt(Math.abs(s.surplus))}</dd></div>
+                  <div className="rounded-xl bg-white p-2.5 ring-1 ring-navy-100"><dt className="text-xs text-navy-500">Still owed in 10 years</dt><dd className="font-bold">{fmt(s.owed10)}</dd></div>
+                  <div className="rounded-xl bg-white p-2.5 ring-1 ring-navy-100"><dt className="text-xs text-navy-500">Own minus owe, in 10 years</dt><dd className="font-bold">{s.position10 !== null ? fmt(s.position10) : "—"}</dd></div>
+                  <div className="rounded-xl bg-white p-2.5 ring-1 ring-navy-100"><dt className="text-xs text-navy-500">Financial risk</dt><dd className={cx("font-bold", rt.cls)}>{rt.dot} {rt.label}</dd></div>
+                </dl>
+              </li>
+            );
+          })}
+        </ol>
       </Card>
     </div>
   );
