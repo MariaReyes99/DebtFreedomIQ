@@ -98,9 +98,34 @@ export type CleanMessage = { role: 'user' | 'assistant'; content: string };
 /** How many earlier projections to carry into follow-up questions. */
 const PROJECTIONS_KEPT = 2;
 
+type Incoming = { role: string; content?: unknown; parts?: unknown; toolInvocations?: unknown };
+
+/**
+ * Chat messages arrive as "parts" (AI SDK 5 and later): text pieces and tool
+ * calls. Read out only the text and the finished tool calls' names and inputs;
+ * everything else in the parts is ignored. Older saved chats with a plain
+ * "content" string still work.
+ */
+function fromParts(m: Incoming): { role: string; content: unknown; toolInvocations?: unknown } {
+  if (!Array.isArray(m.parts)) return { role: m.role, content: m.content, toolInvocations: m.toolInvocations };
+  const parts = m.parts as { type?: unknown; text?: unknown; state?: unknown; input?: unknown; toolName?: unknown }[];
+  const content = parts
+    .filter((p) => p?.type === 'text' && typeof p.text === 'string')
+    .map((p) => p.text as string)
+    .join('');
+  const toolInvocations = parts
+    .filter((p) => typeof p?.type === 'string' && (p.type.startsWith('tool-') || p.type === 'dynamic-tool'))
+    .map((p) => ({
+      toolName: p.type === 'dynamic-tool' ? p.toolName : (p.type as string).slice('tool-'.length),
+      args: p.input,
+      state: p.state === 'output-available' ? 'result' : p.state,
+    }));
+  return { role: m.role, content, toolInvocations };
+}
+
 /**
  * Rebuild the conversation from scratch. Anything not on the allowlist is
- * dropped: system/data/tool roles, toolInvocations, parts, attachments, ids.
+ * dropped: system/data/tool roles, tool outputs, files, attachments, ids.
  */
 export function sanitizeChatMessages(
   body: unknown,
@@ -112,10 +137,11 @@ export function sanitizeChatMessages(
 
   const cleaned: CleanMessage[] = [];
   const notes: { index: number; note: string }[] = [];
-  for (const m of parsed.data.messages) {
+  for (const raw of parsed.data.messages) {
+    const m = fromParts(raw);
     if ((m.role !== 'user' && m.role !== 'assistant') || typeof m.content !== 'string') continue;
     const content = m.content.replace(/\u0000/g, '').trim();
-    const note = m.role === 'assistant' && describeTools ? describeTools((m as { toolInvocations?: unknown }).toolInvocations) : '';
+    const note = m.role === 'assistant' && describeTools ? describeTools(m.toolInvocations) : '';
     if (!content && !note) continue;
     if (note) notes.push({ index: cleaned.length, note });
     if (m.role === 'user' && content.length > CHAT_LIMITS.maxUserChars) {

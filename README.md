@@ -22,7 +22,7 @@ DebtFreedomIQ gives people a free financial health check, a clear plan, the righ
 
 ## Tech stack
 
-Next.js 15 (App Router, server actions) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Auth, Postgres, row-level security) · Stripe · OpenAI (`gpt-4o-mini` by default) with the Vercel AI SDK · Upstash Vector (library search) and Redis (rate limits) · Resend (email) · Recharts · Vercel hosting.
+Next.js 15 (App Router, server actions) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Auth, Postgres, row-level security) · Stripe · OpenAI (`gpt-4o-mini` by default) with the Vercel AI SDK 6 · Upstash Vector (library search) and Redis (rate limits) · Resend (email) · Recharts · Vercel hosting.
 
 ## Running it locally
 
@@ -80,7 +80,7 @@ next.config.ts           Security headers
 docs/                    Go-live checklist, keys guide, email setup, compliance, marketing copy
 ```
 
-The library code imports `zod/v3` because AI SDK v4 expects zod 3; `.npmrc` sets `legacy-peer-deps=true` for the same reason. Library styles live in `app/research.css`, scoped to `.research`.
+The library chat uses the Vercel AI SDK 6 (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`). Its schemas use zod's v3 API (`zod/v3`), which the SDK accepts directly. Library styles live in `app/research.css`, scoped to `.research`.
 
 ## How the scores work
 

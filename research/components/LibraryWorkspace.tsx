@@ -1,10 +1,11 @@
 'use client';
 
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useProjectorPlan } from './useProjectorPlan';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type UIMessage } from 'ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MilestoneTable, ProjectionChart } from './ProjectionChart';
@@ -185,28 +186,57 @@ export default function LibraryWorkspace({ view }: { view: Tab }) {
       .catch(() => {});
   }, []);
 
-  const { messages, input, setInput, setMessages, handleInputChange, handleSubmit, status, error } = useChat({
-    api: '/api/library/chat',
-    initialMessages: savedChat(),
-    body: { country, retireIn: retireIn && retireIn !== country ? retireIn : undefined, plan: sharePlan, comparison: shareComparison },
-    onResponse: (res) => {
-      const notice = res.headers.get('X-Privacy-Notice');
-      setPrivacyNotice(notice ? decodeURIComponent(notice) : null);
-      const left = res.headers.get('X-Questions-Remaining');
-      setRemaining(left !== null ? Number(left) : null);
-      const reached = res.headers.get('X-Limit-Reached');
-      if (reached) setLimitTier(reached as LimitTier);
-      // That was the last question for today: show the upgrade panel under the answer.
-      else if (res.ok && left === '0') setLimitTier((res.headers.get('X-Questions-Tier') ?? 'free') as LimitTier);
-      setAnswerHeld(res.headers.get('X-Answer-Check') === 'held');
-    },
-  });
+  // Read the response headers (privacy notice, questions left, answer check) on every question.
+  const onResponse = useRef<(res: Response) => void>(() => {});
+  onResponse.current = (res) => {
+    const notice = res.headers.get('X-Privacy-Notice');
+    setPrivacyNotice(notice ? decodeURIComponent(notice) : null);
+    const left = res.headers.get('X-Questions-Remaining');
+    setRemaining(left !== null ? Number(left) : null);
+    const reached = res.headers.get('X-Limit-Reached');
+    if (reached) setLimitTier(reached as LimitTier);
+    // That was the last question this month: show the upgrade panel under the answer.
+    else if (res.ok && left === '0') setLimitTier((res.headers.get('X-Questions-Tier') ?? 'free') as LimitTier);
+    setAnswerHeld(res.headers.get('X-Answer-Check') === 'held');
+  };
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: '/api/library/chat',
+        fetch: async (url, init) => {
+          const res = await fetch(url, init);
+          onResponse.current(res);
+          return res;
+        },
+      }),
+    [],
+  );
+  const [input, setInput] = useState('');
+  const { messages, setMessages, sendMessage, status, error } = useChat({ transport });
+  // Bring back this tab's conversation after the page has loaded (loading it
+  // earlier would make the first render differ from the server's).
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    const saved = savedChat();
+    if (saved) setMessages(saved);
+    setRestored(true);
+  }, [setMessages]);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text) return;
+    setInput('');
+    void sendMessage(
+      { text },
+      { body: { country, retireIn: retireIn && retireIn !== country ? retireIn : undefined, plan: sharePlan, comparison: shareComparison } },
+    );
+  };
   const askAbout = (q: string) => { if (view === 'ask') setInput(q); else router.push(`/whatif/library?q=${encodeURIComponent(q)}`); };
   // Keep the conversation while moving between Explore my future pages (this browser tab only)
   useEffect(() => {
-    if (status !== 'ready') return;
+    if (!restored || status !== 'ready') return;
     try { if (messages.length) sessionStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-30))); else sessionStorage.removeItem(CHAT_KEY); } catch { /* ignore */ }
-  }, [messages, status]);
+  }, [messages, status, restored]);
   // A question chosen on My retirement picture arrives as ?q=
   useEffect(() => {
     if (view !== 'ask') return;
@@ -301,14 +331,14 @@ export default function LibraryWorkspace({ view }: { view: Tab }) {
                       <span className="message-speaker">{message.role === 'user' ? 'YOU' : 'LIBRARY'}</span>
                       {message.role === 'assistant' ? (
                         <div className="message-bubble markdown-body">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{message.content}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{messageText(message)}</ReactMarkdown>
                         </div>
                       ) : (
-                        <div className="message-bubble">{message.content}</div>
+                        <div className="message-bubble">{messageText(message)}</div>
                       )}
 
                       {message.role === 'assistant' &&
-                        message.toolInvocations?.map((invocation) => {
+                        toolCalls(message).map((invocation) => {
                           if (invocation.state !== 'result') return null;
                           if (invocation.toolName === 'projectWealth') {
                             return (invocation.result as { ok?: boolean })?.ok ? (
@@ -354,7 +384,7 @@ export default function LibraryWorkspace({ view }: { view: Tab }) {
                           );
                         })}
 
-                      {finished && message.content && <p className="disclaimer-note">{disclaimerFor(country)}</p>}
+                      {finished && messageText(message) && <p className="disclaimer-note">{disclaimerFor(country)}</p>}
                     </div>
                   </li>
                 );
@@ -363,7 +393,7 @@ export default function LibraryWorkspace({ view }: { view: Tab }) {
                 <li className="typing-status">
                   <span /> {answerHeld
                     ? 'Preparing and checking an educational answer…'
-                    : messages[messages.length - 1]?.toolInvocations?.some((t) => t.state === 'result')
+                    : (messages[messages.length - 1] ? toolCalls(messages[messages.length - 1]).some((t) => t.state === 'result') : false)
                       ? 'Writing the answer…'
                       : 'Searching the library…'}
                 </li>
@@ -421,7 +451,7 @@ export default function LibraryWorkspace({ view }: { view: Tab }) {
               <input
                 id="question-input"
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder={limitReached ? "You've used this month's questions" : questionHint(country)}
                 disabled={isBusy || limitReached}
                 maxLength={2000}
@@ -440,7 +470,40 @@ export default function LibraryWorkspace({ view }: { view: Tab }) {
   );
 }
 
-function savedChat() {
+function savedChat(): UIMessage[] | undefined {
   if (typeof window === 'undefined') return undefined;
-  try { const raw = sessionStorage.getItem(CHAT_KEY); return raw ? JSON.parse(raw) : undefined; } catch { return undefined; }
+  try {
+    const raw = sessionStorage.getItem(CHAT_KEY);
+    const saved = raw ? (JSON.parse(raw) as unknown[]) : [];
+    // Chats saved by the previous version have no "parts"; start those afresh.
+    const ok = Array.isArray(saved) && saved.every((m) => Array.isArray((m as { parts?: unknown })?.parts));
+    return ok && saved.length ? (saved as UIMessage[]) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The answer or question text of a chat message. */
+function messageText(message: UIMessage): string {
+  return message.parts.map((p) => (p.type === 'text' ? p.text : '')).join('');
+}
+
+type ToolCall = { toolCallId: string; toolName: string; state: 'result' | 'pending'; args: unknown; result: unknown };
+
+/** The tool calls in a chat message (library searches and projections), finished ones marked "result". */
+function toolCalls(message: UIMessage): ToolCall[] {
+  const calls: ToolCall[] = [];
+  for (const p of message.parts) {
+    if (p.type === 'dynamic-tool' || p.type.startsWith('tool-')) {
+      const part = p as { type: string; toolName?: string; toolCallId: string; state: string; input?: unknown; output?: unknown };
+      calls.push({
+        toolCallId: part.toolCallId,
+        toolName: part.type === 'dynamic-tool' ? part.toolName ?? '' : part.type.slice('tool-'.length),
+        state: part.state === 'output-available' ? 'result' : 'pending',
+        args: part.input,
+        result: part.output,
+      });
+    }
+  }
+  return calls;
 }

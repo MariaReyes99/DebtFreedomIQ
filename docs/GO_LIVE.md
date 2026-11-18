@@ -81,4 +81,4 @@ Refunds are made in the Stripe Dashboard; then cancel the plan on the customer's
 - [ ] Weekly: Admin → Insights and Subscribers.
 - [ ] Monthly: `npm audit` and update packages; review the audit log.
 - [ ] Ask happy users to share their story (Home page) and approve the good ones.
-- [ ] Known low-risk item: the library's AI package (Vercel AI SDK v4) has a low-severity advisory fixed only in v5. Plan that upgrade within a few months.
+- [ ] Run `npm audit` before each release (0 known vulnerabilities as at 18 November 2026, after the AI SDK 6 upgrade). Dependabot pull requests: let Vercel's preview build pass before merging.

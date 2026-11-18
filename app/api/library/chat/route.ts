@@ -17,7 +17,7 @@
  *       held back, checked, rewritten once if needed, or replaced with a safe
  *       fallback before the reader sees it. Sources and charts still stream.
  */
-import { streamText, generateText, tool, embed, jsonSchema, zodSchema } from 'ai';
+import { streamText, generateText, tool, embed, jsonSchema, zodSchema, stepCountIs } from 'ai';
 import { Index } from '@upstash/vector';
 import { createHash } from 'node:crypto';
 import { z } from 'zod/v3';
@@ -163,7 +163,8 @@ export async function POST(req: Request) {
   // An anonymous, hashed id lets OpenAI trace abuse without any personal details.
   const openaiUser = createHash('sha256').update(`openai:${viewer.key}`).digest('hex').slice(0, 32);
   const openai = createOpenAIProvider();
-  const model = openai(process.env.CHAT_MODEL ?? 'gpt-4o-mini', { user: openaiUser });
+  const model = openai.chat(process.env.CHAT_MODEL ?? 'gpt-4o-mini');
+  const providerOptions = { openai: { user: openaiUser } };
 
   // 4. Answer
   const result = streamText({
@@ -171,11 +172,12 @@ export async function POST(req: Request) {
     temperature: 0.2,
     system,
     messages,
+    providerOptions,
     tools: {
       getInformation: tool({
         description:
           'Search across every collection in the DebtFreedomIQ Research Library and return the most relevant source passages.',
-        parameters: checked(z.object({
+        inputSchema: checked(z.object({
           query: z.string().max(500).describe('the topic, term, or sub-question to search for'),
         })),
         execute: async ({ query }) => {
@@ -184,8 +186,9 @@ export async function POST(req: Request) {
           const index = getIndex();
           try {
             const { embedding } = await embed({
-              model: openai.embedding(process.env.EMBEDDING_MODEL ?? 'text-embedding-3-small', { user: openaiUser }),
+              model: openai.embedding(process.env.EMBEDDING_MODEL ?? 'text-embedding-3-small'),
               value: redactPII(query).clean,
+              providerOptions,
             });
             // Only this country's documents plus general ones. Chunks seeded before
             // country tags existed have no country and are kept as a fallback.
@@ -225,7 +228,7 @@ export async function POST(req: Request) {
       projectWealth: tool({
         description:
           "Project future wealth from age, current savings, monthly contributions, expected return, fees and inflation, with an optional goal (a target balance or a yearly retirement income, both in today's dollars). Returns Low/Expected/High scenarios, balances at ages 55/60/65/70, sustainable retirement income, and progress towards the goal.",
-        parameters: checkedLater(ProjectionInputSchema),
+        inputSchema: checkedLater(ProjectionInputSchema),
         execute: async (raw) => {
           const checked = ProjectionInputSchema.safeParse(raw);
           if (!checked.success) return { ok: false as const, error: `${describeIssues(checked.error)}. ${OUT_OF_RANGE_HELP}` };
@@ -243,7 +246,7 @@ export async function POST(req: Request) {
       getExchangeRates: tool({
         description:
           "Today's exchange rates (European Central Bank reference rates via Frankfurter). Call it before projectHousehold whenever the plan uses more than one currency, and put the results in projectHousehold's fx list.",
-        parameters: checked(z.object({
+        inputSchema: checked(z.object({
           home: z.enum(CURRENCIES).describe('Currency of the country the user lives in'),
           currencies: z.array(z.enum(CURRENCIES)).min(1).max(4).describe('The other currencies in the plan'),
         })),
@@ -257,7 +260,7 @@ export async function POST(req: Request) {
       projectHousehold: tool({
         description:
           "Project a whole household in one run: one person or a couple, cash, several investments (KiwiSaver, shares, funds), properties with their mortgages, other assets and debts, incomes (salary, dividends, rent, pensions such as NZ Super) and expenses (living costs, children, parents, pets, other). Monthly surplus is reinvested and shortfalls are drawn from savings. Optionally compares several return assumptions side by side. Returns net worth at each age in today's dollars, when money runs out, goal progress, warnings, and a portfolio analysis (strengths, weaknesses, risks, and measured levers to explore).",
-        parameters: checkedLater(HouseholdInputSchema),
+        inputSchema: checkedLater(HouseholdInputSchema),
         execute: async (raw) => {
           const checked = HouseholdInputSchema.safeParse(raw);
           if (!checked.success) return { ok: false as const, error: `${describeIssues(checked.error)}. ${OUT_OF_RANGE_HELP}` };
@@ -270,7 +273,7 @@ export async function POST(req: Request) {
         },
       }),
     },
-    maxSteps: 5,
+    stopWhen: stepCountIs(5),
     ...(holdForCheck
       ? {
           experimental_transform: adviceGuardTransform({
@@ -278,6 +281,7 @@ export async function POST(req: Request) {
               (
                 await generateText({
                   model,
+                  providerOptions,
                   temperature: 0,
                   system: SYSTEM_PROMPT,
                   prompt: `QUESTION:\n${latestText}\n\nDRAFT ANSWER:\n${draft}\n\n${REWRITE_INSTRUCTION}`,
@@ -289,7 +293,8 @@ export async function POST(req: Request) {
           }),
         }
       : {}),
-    onFinish: ({ text: answer }) => {
+    onFinish: ({ steps }) => {
+      const answer = steps.map((s) => s.text).join('\n');
       // Normal (streamed) answers are monitored after the fact.
       const flags = outputRedFlags(answer);
       if (flags.length && !holdForCheck) safeLog('advice_red_flag', { flags, viewer: viewer.key });
@@ -303,9 +308,9 @@ export async function POST(req: Request) {
   if (quota.tier) headers['X-Questions-Tier'] = quota.tier;
   if (holdForCheck) headers['X-Answer-Check'] = 'held';
 
-  return result.toDataStreamResponse({
+  return result.toUIMessageStreamResponse({
     headers,
-    getErrorMessage: (error) => {
+    onError: (error) => {
       const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
       safeLog('chat_error', { message: detail });
       void securityAlert('chat_errors', '/api/library/chat');

@@ -47,3 +47,23 @@ test('without the describer, history is text only as before', () => {
   if (!r.ok) return;
   assert.equal(r.messages[1].content, 'Answer 1');
 });
+
+test('follow-ups also work with messages sent as parts (AI SDK 5+)', () => {
+  const r = sanitizeChatMessages({
+    messages: [
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Project my plan' }] },
+      { id: 'a1', role: 'assistant', parts: [
+        { type: 'step-start' },
+        { type: 'tool-projectHousehold', toolCallId: 't1', state: 'output-available', input: plan, output: { ok: true } },
+        { type: 'text', text: 'Answer 1' },
+      ] },
+      { id: 'u2', role: 'user', parts: [{ type: 'text', text: 'What if I retire at 67?' }] },
+    ],
+  }, projectionNote);
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  assert.equal(r.messages[0].content, 'Project my plan');
+  assert.match(r.messages[1].content, /^Answer 1/);
+  assert.match(r.messages[1].content, /"retirementAge":65/);
+  assert.equal(r.messages[2].content, 'What if I retire at 67?');
+});

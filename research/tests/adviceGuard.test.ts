@@ -1,21 +1,26 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { streamText, simulateReadableStream, tool, jsonSchema, zodSchema } from "ai";
-import { MockLanguageModelV1 } from "ai/test";
+import { streamText, simulateReadableStream, tool, stepCountIs } from "ai";
+import { MockLanguageModelV3 } from "ai/test";
 import { z } from "zod/v3";
-import type { LanguageModelV1StreamPart } from "@ai-sdk/provider";
+import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { adviceGuardTransform, type GuardEvent } from "../lib/guardrails/adviceGuard";
 import { SAFE_FALLBACK } from "../lib/guardrails/advice";
 
-const usage = { promptTokens: 1, completionTokens: 1 };
+const usage = {
+  inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+  outputTokens: { total: 1, text: 1, reasoning: 0 },
+};
+const finish = (unified: "stop" | "tool-calls"): LanguageModelV3StreamPart => ({ type: "finish", finishReason: { unified, raw: unified }, usage });
+const textParts = (chunks: string[]): LanguageModelV3StreamPart[] => [
+  { type: "text-start", id: "t" },
+  ...chunks.map((delta) => ({ type: "text-delta" as const, id: "t", delta })),
+  { type: "text-end", id: "t" },
+];
+
 const textModel = (chunks: string[]) =>
-  new MockLanguageModelV1({
-    doStream: async () => ({
-      stream: simulateReadableStream({
-        chunks: [...chunks.map((textDelta) => ({ type: "text-delta" as const, textDelta })), { type: "finish" as const, finishReason: "stop" as const, usage }],
-      }),
-      rawCall: { rawPrompt: null, rawSettings: {} },
-    }),
+  new MockLanguageModelV3({
+    doStream: async () => ({ stream: simulateReadableStream({ chunks: [...textParts(chunks), finish("stop")] }) }),
   });
 
 async function run(chunks: string[], rewrite: (d: string) => Promise<string>) {
@@ -54,23 +59,22 @@ test("if the rewrite still fails or errors, the safe fallback is shown", async (
 
 test("tool results (sources, projections) still stream before the checked text", async () => {
   let call = 0;
-  const model = new MockLanguageModelV1({
+  const model = new MockLanguageModelV3({
     doStream: async () => {
       call++;
-      const chunks: LanguageModelV1StreamPart[] = call === 1
-        ? [{ type: "tool-call" as const, toolCallType: "function" as const, toolCallId: "t1", toolName: "lookup", args: "{\"q\":\"fif\"}" },
-           { type: "finish" as const, finishReason: "tool-calls" as const, usage }]
-        : [{ type: "text-delta" as const, textDelta: "You should buy " }, { type: "text-delta" as const, textDelta: "now." },
-           { type: "finish" as const, finishReason: "stop" as const, usage }];
-      return { stream: simulateReadableStream({ chunks }), rawCall: { rawPrompt: null, rawSettings: {} } };
+      const chunks: LanguageModelV3StreamPart[] = call === 1
+        ? [{ type: "tool-call", toolCallId: "t1", toolName: "lookup", input: "{\"q\":\"fif\"}" }, finish("tool-calls")]
+        : [...textParts(["You should buy ", "now."]), finish("stop")];
+      return { stream: simulateReadableStream({ chunks }) };
     },
   });
   const order: string[] = [];
   const result = streamText({
-    model, prompt: "q", maxSteps: 3,
-    tools: { lookup: tool({ parameters: jsonSchema<{ q: string }>(zodSchema(z.object({ q: z.string() }) as never).jsonSchema), execute: async () => ["source"] }) },
+    model, prompt: "q", stopWhen: stepCountIs(3),
+    tools: { lookup: tool({ inputSchema: z.object({ q: z.string() }), execute: async () => ["source"] }) },
     experimental_transform: adviceGuardTransform({ rewrite: async () => "Educational version." }),
   });
-  for await (const part of result.fullStream) if (part.type === "tool-result" || part.type === "text-delta") order.push(part.type === "text-delta" ? `text:${part.textDelta}` : "tool-result");
+  for await (const part of result.fullStream) if (part.type === "tool-result" || part.type === "text-delta") order.push(part.type === "text-delta" ? `text:${part.text}` : "tool-result");
   assert.deepEqual(order, ["tool-result", "text:Educational version."]);
+  assert.equal(await result.text, "Educational version.");
 });
