@@ -46,7 +46,7 @@ If you only see a **Legacy API Keys** tab, click **Create new API keys** to make
 1. Go to **platform.openai.com** → sign in → **API keys** → **Create new secret key** → name it `debtfreedomiq`.
 2. Copy it (starts with `sk-`) → `OPENAI_API_KEY=` in `.env.local` 🔒
 3. **Settings → Billing**: add a small credit (e.g. US$5–10) and a monthly **usage limit** so costs can't run away.
-4. Optional: `OPENAI_MODEL=` to choose a model (default `gpt-5.6-terra`).
+4. Optional: `OPENAI_MODEL=` to choose a model (default `gpt-4o-mini`, the low-cost option).
 
 ---
 
