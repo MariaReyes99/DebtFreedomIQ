@@ -1,6 +1,6 @@
-import type { AssessmentInput } from "../types";
-import { toHousehold } from "../library";
-import { projectHousehold, type HouseholdInput } from "./household";
+import type { AssessmentInput } from "./types";
+import { toHousehold } from "./library";
+import { projectHousehold, type HouseholdInput } from "@/research/lib/finance/household";
 
 export type LongView = {
   years10: { age: number; netWorth: number; liquid: number };

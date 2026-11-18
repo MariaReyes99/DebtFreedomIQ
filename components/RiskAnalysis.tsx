@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import type { AssessmentInput } from "@/lib/types";
 import { toHousehold } from "@/lib/library";
-import { projectHousehold, type HouseholdInput } from "@/lib/projection/household";
-import { analyseHousehold, type HouseholdAnalysis } from "@/lib/projection/analysis";
+import { projectHousehold, type HouseholdInput } from "@/research/lib/finance/household";
+import { analyseHousehold, type HouseholdAnalysis } from "@/research/lib/finance/householdAnalysis";
 import { Card, cx } from "./ui";
 
 /** Strengths, weaknesses and risks of the finances, now and with the chosen moves (Investment Library engine). */

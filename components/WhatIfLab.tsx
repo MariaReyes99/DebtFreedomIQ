@@ -3,7 +3,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { AssessmentInput } from "@/lib/types";
 import { calculate } from "@/lib/finance";
 import { applyChoices, debtTimeline, isEmpty, propertiesOf, NO_CHOICES, type Choices, type DebtChoice, type NewAsset, type PropAction, type PropChoice } from "@/lib/whatif";
-import { longView } from "@/lib/projection";
+import { longView } from "@/lib/longview";
 import { libraryLink } from "@/lib/library";
 import { fmtMonths, monthToDate } from "@/lib/plan";
 import { COUNTRIES, money, type CountryCode } from "@/lib/countries";

@@ -61,7 +61,7 @@ const SCENES: Scene[] = [
 const DISMISS_KEY = 'irl:intro-seen';
 const VOICE_KEY = 'irl:intro-voice';
 const LAST = SCENES.length - 1;
-/** Set NEXT_PUBLIC_INTRO_AUDIO=on and add public/intro-audio/scene-1.mp3 … scene-9.mp3 to use recorded voice-overs. */
+/** Set NEXT_PUBLIC_INTRO_AUDIO=on and add public/intro-audio/scene-1.mp3 … scene-9.mp3 to use recorded voice-overs (see docs/INTRO_AUDIO.md). */
 const RECORDED_AUDIO = process.env.NEXT_PUBLIC_INTRO_AUDIO === 'on';
 
 type VoiceSettings = { voiceURI?: string; rate: number; pitch: number };

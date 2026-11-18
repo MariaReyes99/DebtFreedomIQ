@@ -3,15 +3,16 @@
 Work through these in order. Tick each box. Keys and secrets go only in Vercel's settings and your own `.env.local`, never in chat, email or GitHub.
 
 ## 1. Apply the latest code
-- [ ] In `C:\dev\debtfreedomiq`: `git am debtfreedomiq-fix.patch`, then `npm install`, then `npm run build` (it must finish with "Compiled successfully").
-- [ ] `git push` to GitHub.
+- [ ] Push the latest code to the `main` branch on GitHub. Vercel builds and deploys it automatically.
+- [ ] Locally, `npm install` then `npm run build` must finish with "Compiled successfully".
+- [ ] Keep the code folder outside OneDrive (for example `C:\dev\dfiq`): syncing locks files while Git works.
 
 ## 2. Database (Supabase)
 - [ ] Use a **production** Supabase project (separate from testing if you can).
 - [ ] SQL Editor → paste all of `supabase/schema.sql` → Run. It is safe to run again; it adds the support inbox, stories and audit log.
 - [ ] Authentication → URL configuration: Site URL = your live address; Redirect URLs = `https://debtfreedomiq.com/**`.
 - [ ] Authentication → Email: turn on **Confirm email**; set a minimum password length of 10.
-- [ ] Authentication → Attack protection: turn on CAPTCHA (hCaptcha or Turnstile) and leaked-password protection if your plan offers it.
+- [ ] Authentication → Attack protection: turn on leaked-password protection if your plan offers it. **Leave CAPTCHA off**: the sign-in pages have no CAPTCHA widget, so turning it on would block every login.
 - [ ] Database → Backups: check daily backups are on (Pro plan gives point-in-time recovery; recommended once you have paying customers).
 
 ## 3. Hosting (Vercel)
@@ -19,12 +20,11 @@ Work through these in order. Tick each box. Keys and secrets go only in Vercel's
   - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`
   - Site: `NEXT_PUBLIC_SITE_URL=https://debtfreedomiq.com`, `ADMIN_EMAILS` = the email(s) you log in with, comma-separated, `NEXT_PUBLIC_COPYRIGHT_TEXT`
   - Payments: `PAYMENTS_MODE=stripe`, `STRIPE_SECRET_KEY` (live, `sk_live_…`), `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`; `ALLOW_TEST_SUBSCRIBE` **removed or false**
-  - AI and library: `OPENAI_API_KEY`, `OPENAI_MODEL`, `CHAT_MODEL`, `EMBEDDING_MODEL`, `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
+  - AI and library: `OPENAI_API_KEY`, `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
   - Limits: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (**required in production**: rate limits and library allowances), `IP_HASH_SALT` (a long random value)
   - Email: `RESEND_API_KEY`, `EMAIL_FROM=DebtFreedomIQ <support@debtfreedomiq.com>`
   - Jobs: `CRON_SECRET` (a long random value)
-  - Optional: `GOOGLE_PLACES_API_KEY`, `ALERT_WEBHOOK_URL`, `HARDSHIP_WAIVER` (leave unset: on), `PREMIUM_PLUS_ENABLED` (leave unset: on)
-- [ ] Remove `NEXT_PUBLIC_LIBRARY_URL` (no longer used).
+  - Optional: `OPENAI_MODEL`, `CHAT_MODEL` (default `gpt-4o-mini`), `EMBEDDING_MODEL` (default `text-embedding-3-small`; must match the one used for `npm run seed`), `GOOGLE_PLACES_API_KEY`, `ALERT_WEBHOOK_URL`, `HARDSHIP_WAIVER` (leave unset: on), `PREMIUM_PLUS_ENABLED` (leave unset: on)
 - [ ] Redeploy after changing variables.
 - [ ] Settings → Domains: add your domain; set the DNS records Vercel shows. HTTPS is automatic.
 - [ ] Settings → Deployment Protection: turn **off** "Vercel Authentication" for Production (otherwise visitors see a Vercel login).
@@ -33,7 +33,7 @@ Work through these in order. Tick each box. Keys and secrets go only in Vercel's
 ## 4. Payments (Stripe)
 - [ ] Activate your Stripe account (business details, bank account, identity).
 - [ ] Turn on **Stripe Tax** if you must charge GST/VAT in a country, and register where required (see section 8).
-- [ ] Developers → Webhooks → add `https://debtfreedomiq.com/api/stripe/webhook` with events `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+- [ ] Workbench → Webhooks → **Add destination**: events from **Your account**, payload style **Snapshot**, events `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`, destination **Webhook endpoint** `https://debtfreedomiq.com/api/stripe/webhook`. Copy its signing secret (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`. Test mode and live mode each need their own webhook and secret.
 - [ ] Settings → Customer emails: turn on receipts.
 - [ ] Settings → Branding: your logo and colours (shown on the payment page).
 - [ ] Make one real purchase with your own card, then refund it from the Stripe Dashboard.

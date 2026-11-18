@@ -1,134 +1,107 @@
 # DebtFreedomIQ
 
-**From financial stress to financial freedom.**
-DebtFreedomIQ is an AI-powered financial decision platform that helps households move from financial stress to financial freedom through personalised assessment, action planning and guided access to support services.
+**Financial triage and decision support for households under money pressure.**
+Live at [debtfreedomiq.com](https://debtfreedomiq.com) · New Zealand, Australia, the Philippines, the United Kingdom and the United States.
 
-> *The Intelligence Behind Every Debt Decision.*
+DebtFreedomIQ gives people a free financial health check, a clear plan, the right local help, and a way to test big money decisions before they make them. It is financial education software, not financial advice or debt settlement.
 
-## Product
+## What's in the app
 
-| Page | Access | What it does |
-|---|---|---|
-| **Financial Health** (`/health`) | Free, no account needed | Income, expenses, debts, assets, savings and situation give **Net Worth, Debt-to-Income, Financial Health Score (0–100), Stress Score, Emergency Fund Score**, charts, AI top-5 recommendations and next steps |
-| **Find Help** (`/help`) | Free: help categories + free community/government directory. **Premium:** AI matching, personalised referral brief, contact and hardship-letter templates, "where to find & verify" | Financial Adviser · Mortgage Adviser · Debt Coach · Budget Adviser · Accountant · Lawyer |
-| **My Freedom Plan** (`/plan`) | **Premium** (preview for everyone) | Conservative / Balanced / Aggressive scenarios, debt-free & mortgage-free timeline, monthly milestones, payoff strategy (avalanche/snowball), savings targets, goals tracker, AI "what-if" questions, save & regenerate, PDF export |
-| Dashboard (`/dashboard`) | Logged in | Latest scores, progress over time, plan & goals |
-| Pricing (`/pricing`) | | **Free** · **Premium NZ$19 one-time** (local equivalents) · **Premium Plus NZ$9.99/month** (coming soon; waitlist) |
-| Admin (`/admin`) | `ADMIN_EMAILS` | Funnel and insights for your **first 100 users**: debt types, situations, help needed, conversion |
-
-Countries: New Zealand, Philippines, Australia, United Kingdom, United States. Currency, crisis lines and the free-help directory adapt to the user's location (Vercel IP country), and users can change their country in their profile.
+| Menu | Route | Access | What it does |
+|---|---|---|---|
+| Home | `/dashboard` | Logged in | Latest scores, today's actions, journey tracker, progress |
+| Check my finances | `/health` | Free, no account | Income, spending, debts and assets → health, stress and emergency-fund scores, the moves to make first, charts |
+| Get help | `/help` | Free | Triage by urgency, crisis lines, free government and community services, a free hardship letter. Premium adds the support-team plan, referral package and readiness checklist (free for anyone in crisis) |
+| My plan | `/plan` | Premium | The Freedom Plan: dated steps in three stages (stabilise, buffer, pay down), ratings for each option, progress |
+| Explore my future | `/whatif` | Free preview, Premium / Premium Plus | What-if simulator and decision dashboard; sub-pages for **My retirement picture** (`/whatif/retirement`) and **Ask the library** (`/whatif/library`) with cited answers |
+| Pricing | `/pricing` | | Free · Premium one-time (NZ$19) · Premium Plus yearly (NZ$59), with local prices in each country and a hardship waiver |
+| About & privacy | `/about`, `/privacy`, `/terms` | | Who we are, how data is used, terms |
+| Contact support | `/support` | | Support form; messages go to the admin inbox |
+| For organisations | `/partners` | | Partner and referral programme |
+| Admin | `/admin` | `ADMIN_EMAILS` only | Subscribers and payments, customers, support inbox, stories, audit log |
 
 ## Tech stack
-Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Auth + Postgres + RLS) · OpenAI Responses API (structured outputs) · Recharts · Stripe-ready payments (mocked by default) · Vercel.
 
-## Quick start
+Next.js 15 (App Router, server actions) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Auth, Postgres, row-level security) · Stripe · OpenAI (`gpt-4o-mini` by default) with the Vercel AI SDK · Upstash Vector (library search) and Redis (rate limits) · Resend (email) · Recharts · Vercel hosting.
+
+## Running it locally
 
 ```bash
 npm install
-cp .env.example .env.local    # then fill in the values (see docs/KEYS_GUIDE.md)
+cp .env.example .env.local    # fill in the values (see docs/KEYS_GUIDE.md)
 npm run dev                   # http://localhost:3000
 ```
 
-1. **Supabase:** create a project → **SQL Editor** → paste the *contents* of `supabase/schema.sql` → **Run**.
-   Then **Authentication → URL Configuration**: add `http://localhost:3000/auth/callback` (and your production URL later) to Redirect URLs.
-2. **OpenAI (optional):** add `OPENAI_API_KEY`. Without it, recommendations, plans and briefs come from the built-in rules engine. Everything still works.
-3. **Payments:** leave `PAYMENTS_MODE=mock` to test Premium end-to-end with the demo checkout (no money taken).
-   For real payments set `PAYMENTS_MODE=stripe` + `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` and add a webhook to `/api/stripe/webhook` (events: `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted`).
-4. Visit `/health` → **Try with example data** to see a full result instantly.
+1. **Supabase:** in the SQL Editor, run all of `supabase/schema.sql` (safe to run again after every update).
+2. **Payments:** locally use `PAYMENTS_MODE=mock` and `ALLOW_TEST_SUBSCRIBE=true` to unlock Premium with a demo checkout. Never set `ALLOW_TEST_SUBSCRIBE` in production.
+3. **OpenAI** is optional: without a key, recommendations and plans come from the built-in rules engine.
+4. **Library:** load the research documents once with `npm run seed` (needs the Upstash Vector keys).
+5. Open `/health` → **Try with example data** to see a full result.
 
-### Try Premium locally
-Create an account → **Pricing → Get Premium** → **Pay (demo)** → My Freedom Plan and Find Help unlock.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Production build (run before pushing) |
+| `npm run typecheck` | TypeScript check |
+| `npm run test:research` | Calculation, guardrail, privacy and security tests |
+| `npm run seed` / `seed:check` | Load (or dry-run) the library documents into Upstash Vector |
+| `npm run eval` | Re-ask the library's test questions and check the answers |
+| `npm run check:sources` | Fail if any library source is overdue for review |
 
-## Deploy to Vercel
-1. Push this repo to GitHub → **vercel.com → Add New Project → Import**.
-2. Add every variable from `.env.local` in **Settings → Environment Variables** (set `NEXT_PUBLIC_SITE_URL` to your domain).
-3. Deploy. Add the production `/auth/callback` URL in Supabase and (for Stripe) the production webhook.
+## Deploying
+
+Pushing to `main` on GitHub deploys to Vercel automatically. Production settings are in Vercel → Settings → Environment Variables; the full launch checklist is in [`docs/GO_LIVE.md`](docs/GO_LIVE.md). A daily job (`/api/billing/run`, scheduled in `vercel.json`) handles Premium Plus renewals and reminders.
 
 ## Project structure
 
 ```
-app/
-  page.tsx                 Landing page
-  health/                  Financial Health (free)
-  help/                    Find Help (free + premium)
-  plan/                    My Freedom Plan (premium + preview)
-  dashboard/  account/  pricing/  checkout/  admin/
-  login/  signup/  reset-password/  auth/ (callback, signout, server actions)
-  api/
-    assessment/            POST calculate + AI recommendations (+ save when logged in)
-    plan/                  POST generate & save plan · plan/goals · plan/ask
-    help/brief/            POST AI referral brief
-    checkout/  waiver/  waitlist/  stripe/webhook/
-components/                UI kit (ui.tsx), charts (Recharts), wizard, results, plan view…
-lib/
-  finance.ts               Scores & rule-based recommendations
-  plan.ts                  Scenario simulator (avalanche/snowball, milestones, savings)
-  ai.ts                    OpenAI calls with guardrails + JSON schemas (falls back to rules)
-  help.ts                  Help categories, matching, templates
-  countries.ts             Per-country currency, pricing, crisis lines, free-help directory
-  payments.ts              Mock / Stripe provider abstraction
-  mock-data.ts             Example household
-  session.ts  events.ts  assessment.ts  plan-server.ts  supabase/
-supabase/schema.sql        8 tables + RLS + profile trigger
-docs/KEYS_GUIDE.md         Step-by-step: getting every key
-docs/EMAIL_SETUP.md        Branded emails from your own domain (no "Supabase Auth")
-middleware.ts              Session refresh, protected routes, anonymous id
+app/                     Pages and API routes (Next.js App Router)
+  health/ help/ plan/ whatif/ dashboard/ pricing/ account/ support/ partners/ admin/
+  api/                   assessment, plan, help, checkout, stripe/webhook, billing, support,
+                         stories, account (export/delete), library (chat, fx, research, usage)
+components/              UI: wizard, results, plan, simulator, decision dashboard, charts
+lib/                     DebtFreedomIQ logic
+  finance.ts plan.ts freedom.ts   scores, scenarios, staged Freedom Plan
+  scorecard.ts whatif.ts          option ratings and what-if maths
+  longview.ts library.ts          10-year and retirement figures (uses the research engine)
+  help.ts supportteam.ts crisis.ts help matching, support team, crisis access
+  payments.ts billing.ts          Stripe / mock checkout, renewals
+  ai.ts                           OpenAI calls with guardrails and rule-based fallbacks
+  ratelimit.ts support.ts         rate limits, support desk
+research/                The Research Library and retirement planner (part of Explore my future)
+  lib/finance/           household projection, analysis, fund and platform comparisons
+  lib/guardrails/        personal-advice and personal-details protection
+  components/            retirement planner, library chat, charts
+  data/corpus/           the cited research documents
+  tests/                 tests and the question set for npm run eval
+supabase/schema.sql      Tables, row-level security and grants
+middleware.ts            Sessions, protected routes, same-origin checks, size caps, rate limits
+next.config.ts           Security headers
+docs/                    Go-live checklist, keys guide, email setup, compliance, marketing copy
 ```
 
-## Database
-`auth.users` (Supabase Auth) · `profiles` · `financial_assessments` · `assets` · `debts` · `expenses` · `financial_plans` · `subscriptions` · `events`. Row-level security means users can only read and write their own rows. Subscriptions and events are written by the server only.
+The library code imports `zod/v3` because AI SDK v4 expects zod 3; `.npmrc` sets `legacy-peer-deps=true` for the same reason. Library styles live in `app/research.css`, scoped to `.research`.
 
 ## How the scores work
+
 - **Debt-to-income** = monthly debt repayments ÷ monthly take-home income.
-- **Emergency fund** = cash savings ÷ (essential expenses + debt repayments), in months. The score reaches 100 at 6 months.
-- **Financial Health (0–100)** = 30% debt-to-income · 20% savings rate · 20% emergency fund · 15% leverage (debts ÷ assets) · 15% high-interest debt share, minus penalties for missed payments, collections or essentials at risk.
-- **Stress (0–100)** combines cash-flow gap, repayment burden, buffer, high-interest debt and the hardship flags people tick.
+- **Emergency fund** = cash savings ÷ (essential costs + debt repayments), in months; full marks at 6 months.
+- **Financial health (0–100)** = 30% debt-to-income · 20% savings rate · 20% emergency fund · 15% leverage · 15% high-interest debt share, minus penalties for missed payments, collections or essentials at risk.
+- **Stress (0–100)** combines the monthly gap, repayment burden, buffer, high-interest debt and the hardship situations people tick.
+- **Comparing options** (Explore my future): overall = 40% cash flow · 30% risk · 20% wealth · 10% ease.
 
 ## Responsible design
-- Free help is never paywalled. Crisis lines appear on every page and lead the results when stress is high.
-- The AI is instructed to give general information only: no product recommendations, payday loans or fee-charging debt settlement, and essentials before debt.
-- "Can't afford it?" free Premium option (`HARDSHIP_WAIVER`), tracked separately from sales.
-- Positioned as **financial education software**, not debt relief/settlement (matters for Stripe, Google Ads and regulators).
-- Have Privacy/Terms reviewed per country before launch.
 
-## Roadmap
-- Premium Plus monthly tracking and recalculation (Stripe subscriptions are already supported)
-- Bank-statement CSV import · reminders · multi-language (Filipino, Māori, Samoan)
-- Referral partnerships (mortgage brokers, advisers) only with clear disclosure and licensing checks
+- Free help is never paywalled. Crisis lines appear on every page, and anyone in crisis (can't afford food, lost income, collections or court, housing or utilities at risk) gets the Premium support team free.
+- The AI gives general information only: no product picks, payday loans or fee-charging debt settlement; essentials come before debt.
+- "Can't afford it?" hardship waiver (`HARDSHIP_WAIVER`).
+- Users can download or delete all their data from **My account → My data**.
+- Disclaimers are drafts for legal review in each country: see [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md).
 
-## Billing: unsubscribe, saved cards, renewals
+## Security
 
-- **My Account → Plan & billing**: see your plan, **Unsubscribe** (Premium switches off immediately), add/delete cards, payment history.
-- **Renewals (Premium Plus)**: a daily job (`/api/billing/run`, scheduled in `vercel.json`) charges the saved card and extends 30 days.
-  No card → the subscription goes **on hold** (Premium locked, red banner site-wide), a reminder email is sent, again after 3 and 7 days, and it ends after 30 days unpaid. **Pay now** restores access instantly.
-- Only Premium is suspended. The free Financial Health check and the free hardship help always stay open.
-- Stripe mode: Stripe stores cards and renews; webhooks `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted` keep the status in sync. Add `invoice.payment_failed` to your Stripe CLI `--events` list.
-- Testing: Admin page → **Run billing now** / **Test: treat every Premium Plus as due today**.
-- Run the new SQL at the bottom of `supabase/schema.sql` in the Supabase SQL editor (safe to run again).
+See [`SECURITY.md`](SECURITY.md) to report a problem and for a summary of the protections.
 
-## Explore my future (simulator, My retirement picture, Research Library)
+## Licence
 
-One app. Explore my future has five sub-pages (tabs: `components/ExploreTabs.tsx`):
-
-| Page | Route | Code |
-|---|---|---|
-| What-if simulator | `/whatif` | `components/WhatIfLab.tsx`, `lib/whatif.ts` |
-| My retirement picture | `/whatif/retirement` (+ `/guide`) | `research/components/LibraryWorkspace.tsx` (view "numbers") |
-| Ask the library | `/whatif/library` | same component (view "ask"), API `app/api/library/chat` |
-| How it works / Sources | `/whatif/library/how-it-works`, `/sources` | pages in `app/whatif/library` |
-
-- The former Investment Research Library lives in `research/` (`lib`, `components`, `data/corpus`, `tests`, `scripts`). Its styles are in `app/research.css`, scoped to `.research`.
-- **One subscription**: library questions use the DebtFreedomIQ login and plan (`research/lib/viewer.ts`): visitors 2 a month, Free 5, Premium 20, Premium Plus 300. Saving, comparing and printing retirement plans is Premium Plus. The library has no pricing, checkout or sign-in of its own.
-- **Retirement picture from the health check**: `lib/library.ts` converts the numbers into `HouseholdInput` and opens `/whatif/retirement?view=full#plan=…`. The numbers travel in the URL fragment, so no server sees them.
-- Library settings: `CHAT_MODEL`, `EMBEDDING_MODEL`, `UPSTASH_VECTOR_REST_*`, `UPSTASH_REDIS_REST_*`, `IP_HASH_SALT` (see `.env.example`). Load the documents once with `npm run seed`. Library tests: `npm run test:research`.
-- The AI SDK used by the library (v4) expects zod 3, so library code imports `zod/v3`; `.npmrc` sets `legacy-peer-deps=true` for that reason.
-
-### Financial Simulator (Premium Plus, yearly)
-- Premium (one-time): Freedom Plan + one what-if at a time (property and investment choices).
-- Premium Plus (`plusPrice` per year in `lib/countries.ts`; `PREMIUM_PLUS_ENABLED=false` hides it): refinance / extra repayments / new term, buy a property, invest or use savings as a lump sum, point released money at a chosen debt, interest saved and debt-free dates, net worth in 10 years and at retirement (Library engine copied to `lib/projection/`), up to 3 saved scenarios side by side.
-
-### Freedom Plan (staged) + Simulator analysis
-- `/plan` = dated steps in three stages: **Stabilise** (close the monthly gap: essential calls, number checks, the person's Simulator choices, then suggested options until the gap is covered, with deadlines tightened by the cash-runway date), **Buffer** (3 months of costs), **Pay down** (the 3 scenarios, built from the numbers *after* the chosen moves; hidden until there is spare money). Steps are ticked off and saved (`financial_plans.steps_done`); choices are stored in `financial_plans.choices`. Logic: `lib/freedom.ts`.
-- Simulator → "Use these choices in my Freedom Plan".
-- Simulator (Premium Plus): strengths, weaknesses & risks now vs with choices (`lib/projection/analysis.ts`, from the Library) and an investment platform fee comparison (`lib/projection/platforms.ts`).
-- Run the latest `supabase/schema.sql` (adds `financial_plans.choices` and `steps_done`).
+See [`LICENSE`](LICENSE).

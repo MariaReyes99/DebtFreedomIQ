@@ -3,7 +3,7 @@
 By default, Penny speaks with the most natural voice on the viewer's device. For a real human voice:
 
 1. Record each line below (a voice actor, yourself, or a natural-voice service such as ElevenLabs, Microsoft Azure Speech or Google Cloud Text-to-Speech). Check the service's terms allow commercial use.
-2. Save them as MP3 files in this folder: `scene-1.mp3` to `scene-9.mp3`. If you recorded them before 21 October 2026, re-record scenes 6 and 7: their wording changed.
+2. Save them as MP3 files in `public/intro-audio/`: `scene-1.mp3` to `scene-9.mp3`. If you recorded them before 21 October 2026, re-record scenes 6 and 7: their wording changed.
 3. Add `NEXT_PUBLIC_INTRO_AUDIO=on` to `.env.local` and to Vercel's environment variables, then restart or redeploy.
 
 If a file is missing, that scene falls back to the device's voice. Captions always show.

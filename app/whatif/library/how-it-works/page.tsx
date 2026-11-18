@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'How it works' };
 
 /*
  * DRAFT wording. Have a lawyer in each country you serve review this page and
- * the disclaimers below before charging for the service (see COMPLIANCE.md).
+ * the disclaimers below before charging for the service (see docs/COMPLIANCE.md).
  */
 export default function MethodologyPage() {
   return (

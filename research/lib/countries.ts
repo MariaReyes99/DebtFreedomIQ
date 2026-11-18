@@ -5,7 +5,7 @@
  * Ages and names here are DEFAULTS that users can change in the projector.
  * They follow official sources as at the date below; rules change, so review
  * them on the schedule in data/corpus/sources.json and update this file.
- * Disclaimer wording is a DRAFT for legal review (see COMPLIANCE.md).
+ * Disclaimer wording is a DRAFT for legal review (see docs/COMPLIANCE.md).
  */
 export const COUNTRY_CODES = ['NZ', 'AU', 'US', 'UK', 'PH'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];

@@ -5,7 +5,6 @@
  * happens, so you hear about possible attacks or incidents quickly:
  *  - a forged Stripe webhook (an attempt to unlock a plan without paying)
  *  - card numbers typed into the chat (blocked, never sent anywhere)
- *  - a burst of checkout attempts (possible card testing)
  *  - usage limits that can't be checked (the chat is refusing questions)
  *  - answers failing with errors
  *
@@ -21,14 +20,12 @@ import { safeLog } from './guardrails/pii';
 export type AlertKind =
   | 'webhook_signature_invalid'
   | 'card_data_blocked'
-  | 'checkout_rate_limited'
   | 'usage_limits_unavailable'
   | 'chat_errors';
 
 const DESCRIPTIONS: Record<AlertKind, string> = {
   webhook_signature_invalid: 'A Stripe webhook arrived with an invalid signature. Someone may be trying to fake a payment, or STRIPE_WEBHOOK_SECRET is wrong.',
   card_data_blocked: 'Someone typed card details into the chat. The message was blocked and not sent anywhere.',
-  checkout_rate_limited: 'Checkout attempts hit the rate limit. This can mean someone is testing stolen cards; check Stripe for failed payments.',
   usage_limits_unavailable: "Usage limits couldn't be checked, so the chat is refusing questions. Check Upstash Redis.",
   chat_errors: 'Answers are failing with errors. Check the Vercel logs for chat_error.',
 };

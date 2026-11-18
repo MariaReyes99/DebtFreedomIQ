@@ -1,10 +1,10 @@
 # Compliance and trust checklist
 
-Status as at 30 September 2026. Items marked **needs a professional** can't be finished in code.
+Status as at 18 November 2026. Covers the retirement picture and Research Library in Explore my future. Items marked **needs a professional** can't be finished in code.
 
 ## 1. Legal review of disclaimers (needs a professional)
 
-The disclaimer wording in `lib/countries.ts` (`disclaimerFor`) and on `/about` and `/methodology` is a **draft**.
+The disclaimer wording in `research/lib/countries.ts` (`disclaimerFor`) and on `/whatif/library/how-it-works`, `/about` and `/terms` is a **draft**.
 Before charging users in a country, have a lawyer there confirm:
 
 | Country | Regulator | Questions for the lawyer |
@@ -15,21 +15,21 @@ Before charging users in a country, have a lawyer there confirm:
 | United States | SEC (and state regulators) | Could it be treated as an investment adviser? Is the publisher exclusion available? State privacy laws. |
 | Philippines | SEC Philippines | Does it require registration as an investment adviser? Data Privacy Act 2012 wording. |
 
-Also review: the personal-advice guardrail (`lib/guardrails/advice.ts`), the "levers to explore" wording
-(`lib/finance/householdAnalysis.ts`), refund and cancellation terms, and the privacy policy.
+Also review: the personal-advice guardrail (`research/lib/guardrails/advice.ts`), the "levers to explore" wording
+(`research/lib/finance/householdAnalysis.ts`), refund and cancellation terms, and the privacy policy.
 
 ## 2. Sources and review dates (done)
 
-- Every document in `data/corpus/sources.json` has a source URL, licence, country, `asOf` date and `reviewEveryMonths`.
-- `/sources` shows every document and when it is due for review.
+- Every document in `research/data/corpus/sources.json` has a source URL, licence, country, `asOf` date and `reviewEveryMonths`.
+- `/whatif/library/sources` shows every document and when it is due for review.
 - `npm run check:sources` fails if any review is overdue. Run it before each deploy.
 - After updating a document, change its `asOf` date and run `npm run seed`.
-- Country defaults (pension ages, access ages) in `lib/countries.ts` are dated by `PROFILES_AS_AT`; review them every 6 months.
+- Country defaults (pension ages, access ages) in `research/lib/countries.ts` are dated by `PROFILES_AS_AT`; review them every 6 months.
 
 ## 3. Quality control (done)
 
-- `npm test`: calculation tests (projection engine, analysis, guardrails, privacy, security).
-- `npm run eval`: re-runs `tests/eval/questions.json` against the chat and checks tool use, citations and wording.
+- `npm run test:research`: calculation tests (projection engine, analysis, guardrails, privacy, security).
+- `npm run eval`: re-runs `research/tests/eval/questions.json` against the chat and checks tool use, citations and wording.
   Run it after any change to the prompt, tools or corpus, and add a question whenever you find a bad answer.
 
 ## 4. Holdings-level analysis, like Morningstar X-Ray (needs a data licence)
@@ -55,14 +55,14 @@ sourced documents and tests.
 ## 7. Security monitoring and breach response (done in code; follow the plan if something happens)
 
 **Alerts:** set `ALERT_WEBHOOK_URL` (a Slack or Discord incoming webhook) in Vercel. You are messaged, at most once an
-hour per kind, when: a Stripe webhook has a bad signature, card details are typed into the chat, checkout attempts hit
-the rate limit, usage limits can't be checked, or answers fail with errors. Alerts contain no user content.
+hour per kind, when: a Stripe webhook has a bad signature, card details are typed into the library chat,
+usage limits can't be checked, or answers fail with errors. Alerts contain no user content.
 
 **Also switch on the alerts each service already offers:** GitHub secret scanning and Dependabot emails, Stripe email
 notifications (disputes, Radar, failed payments), OpenAI usage and budget alerts, Vercel spend notifications.
 
 **If you suspect a breach (unauthorised access to accounts, keys, or users' information):**
-1. Contain: rotate every key (OpenAI, Stripe, Clerk, Upstash, IP_HASH_SALT stays unless exposed), change passwords, sign out other sessions, redeploy.
+1. Contain: rotate every key (OpenAI, Stripe, Supabase secret key, Resend, Upstash, CRON_SECRET; IP_HASH_SALT stays unless exposed), change passwords, sign out other sessions, redeploy.
 2. Assess: what was accessed, whose information, and whether it could cause serious harm.
 3. Notify: under the Privacy Act 2020, a notifiable privacy breach (likely to cause serious harm) must be reported to the
    Privacy Commissioner as soon as practicable (the NotifyUs tool on privacy.org.nz), and the affected people told.

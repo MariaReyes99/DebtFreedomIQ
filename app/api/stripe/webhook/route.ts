@@ -4,13 +4,17 @@ import { stripe, grantSubscription, type PaidTier } from "@/lib/payments";
 import { adminClient } from "@/lib/supabase/server";
 import { markStripeSub } from "@/lib/billing";
 import { track } from "@/lib/events";
+import { securityAlert } from "@/research/lib/alerts";
 
 /** Stripe webhook (only used when PAYMENTS_MODE=stripe). */
 export async function POST(req: Request) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) return NextResponse.json({ error: "Stripe not configured" }, { status: 501 });
   let event: Stripe.Event;
   try { event = stripe().webhooks.constructEvent(await req.text(), req.headers.get("stripe-signature")!, process.env.STRIPE_WEBHOOK_SECRET.match(/whsec_[A-Za-z0-9]+/)?.[0] ?? process.env.STRIPE_WEBHOOK_SECRET); }
-  catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 400 }); }
+  catch {
+    await securityAlert("webhook_signature_invalid", "/api/stripe/webhook");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
 
   if (event.type === "checkout.session.completed") {
     const s = event.data.object as Stripe.Checkout.Session;

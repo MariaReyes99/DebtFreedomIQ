@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { comparePlatforms } from "@/lib/projection/platforms";
+import { comparePlatforms } from "@/research/lib/finance/platform-comparison";
 import { Card } from "./ui";
 
 type Opt = { id: string; name: string; expectedReturnPct: number; annualFeePct: number; monthlyAccountFee: number };

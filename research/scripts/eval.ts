@@ -10,7 +10,7 @@
  *   npm run eval           (in another)
  *   EVAL_URL=https://your-site.vercel.app npm run eval    (a deployed site; uses questions)
  *
- * Results are saved to tests/eval/last-run.json.
+ * Results are saved to research/tests/eval/last-run.json (not committed).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -111,7 +111,7 @@ async function main() {
     if (status === 429) console.log('      (Question limit hit: remove ENFORCE_LIMITS from .env.local and restart npm run dev.)');
   }
   await fs.writeFile(path.join(process.cwd(), 'research', 'tests', 'eval', 'last-run.json'), JSON.stringify({ at: new Date().toISOString(), base: BASE, results }, null, 2));
-  console.log(`\n${cases.length - failed} of ${cases.length} passed. Details: tests/eval/last-run.json`);
+  console.log(`\n${cases.length - failed} of ${cases.length} passed. Details: research/tests/eval/last-run.json`);
   process.exit(failed ? 1 : 0);
 }
 
