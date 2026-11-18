@@ -9,7 +9,8 @@ import { money } from "./countries";
  * All AI calls go through here. If OPENAI_API_KEY is missing, or a call fails,
  * callers get `null` and fall back to the deterministic rule engine.
  */
-const MODEL = process.env.OPENAI_MODEL || "gpt-5.6-terra";
+// gpt-4o-mini: low cost (about US$0.15 in / US$0.60 out per million tokens) and supports structured outputs
+const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 export const aiEnabled = () => Boolean(process.env.OPENAI_API_KEY);
 let client: OpenAI | null = null;
 const ai = () => (client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 15_000, maxRetries: 1 }) /* slow AI → fall back to the rules engine */);
